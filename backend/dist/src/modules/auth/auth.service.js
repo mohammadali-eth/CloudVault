@@ -45,48 +45,98 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
 const jwt_1 = require("@nestjs/jwt");
-const config_1 = require("@nestjs/config");
+const prisma_service_1 = require("../../database/prisma.service");
+const mail_service_1 = require("../../shared/mail.service");
 const bcrypt = __importStar(require("bcrypt"));
-const prisma_service_1 = require("../../prisma/prisma.service");
+const crypto = __importStar(require("crypto"));
 let AuthService = class AuthService {
     prisma;
     jwtService;
-    configService;
-    constructor(prisma, jwtService, configService) {
+    mailService;
+    constructor(prisma, jwtService, mailService) {
         this.prisma = prisma;
         this.jwtService = jwtService;
-        this.configService = configService;
+        this.mailService = mailService;
     }
-    async login(loginDto) {
-        const { email, password } = loginDto;
+    async signup(dto) {
+        const existingUser = await this.prisma.user.findUnique({
+            where: { email: dto.email },
+        });
+        if (existingUser) {
+            throw new common_1.ConflictException('Email already exists');
+        }
+        const hashedPassword = await bcrypt.hash(dto.password, 10);
+        const user = await this.prisma.user.create({
+            data: {
+                email: dto.email,
+                password: hashedPassword,
+                name: dto.name,
+            },
+        });
+        return this.generateTokens(user.id, user.email);
+    }
+    async login(dto) {
         const user = await this.prisma.user.findUnique({
-            where: { email },
+            where: { email: dto.email },
         });
         if (!user) {
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
-        const isPasswordValid = await bcrypt.compare(password, user.password);
+        const isPasswordValid = await bcrypt.compare(dto.password, user.password);
         if (!isPasswordValid) {
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
-        const payload = { email: user.email, sub: user.id };
-        const accessToken = await this.jwtService.signAsync(payload, {
-            secret: this.configService.get('JWT_SECRET'),
-            expiresIn: this.configService.get('JWT_EXPIRY'),
+        return this.generateTokens(user.id, user.email);
+    }
+    async forgotPassword(dto) {
+        const user = await this.prisma.user.findUnique({
+            where: { email: dto.email },
         });
-        const refreshToken = await this.jwtService.signAsync(payload, {
-            secret: this.configService.get('JWT_REFRESH_SECRET'),
-            expiresIn: this.configService.get('JWT_REFRESH_EXPIRY'),
-        });
-        return {
-            user: {
-                id: user.id,
-                email: user.email,
-                createdAt: user.createdAt,
+        if (!user) {
+            return { message: 'If an account exists with this email, a reset link has been sent.' };
+        }
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const resetTokenExpiry = new Date(Date.now() + 3600000);
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                resetToken,
+                resetTokenExpiry,
             },
-            tokens: {
-                accessToken,
-                refreshToken,
+        });
+        await this.mailService.sendPasswordResetEmail(user.email, resetToken);
+        return { message: 'If an account exists with this email, a reset link has been sent.' };
+    }
+    async resetPassword(dto) {
+        const user = await this.prisma.user.findFirst({
+            where: {
+                resetToken: dto.token,
+                resetTokenExpiry: {
+                    gt: new Date(),
+                },
+            },
+        });
+        if (!user) {
+            throw new common_1.BadRequestException('Invalid or expired reset token');
+        }
+        const hashedPassword = await bcrypt.hash(dto.newPassword, 10);
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                password: hashedPassword,
+                resetToken: null,
+                resetTokenExpiry: null,
+            },
+        });
+        return { message: 'Password successfully reset' };
+    }
+    async generateTokens(userId, email) {
+        const payload = { sub: userId, email };
+        return {
+            access_token: await this.jwtService.signAsync(payload),
+            user: {
+                id: userId,
+                email,
             },
         };
     }
@@ -96,6 +146,6 @@ exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
         jwt_1.JwtService,
-        config_1.ConfigService])
+        mail_service_1.MailService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

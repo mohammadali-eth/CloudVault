@@ -1,18 +1,26 @@
 import { AuthService } from './auth.service';
-import { LoginDto } from './dto/login.dto';
+import { SignupDto, LoginDto, ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
 export declare class AuthController {
     private authService;
     constructor(authService: AuthService);
-    login(loginDto: LoginDto): Promise<{
+    signup(dto: SignupDto): Promise<{
+        access_token: string;
         user: {
             id: string;
             email: string;
-            createdAt: Date;
-        };
-        tokens: {
-            accessToken: string;
-            refreshToken: string;
         };
     }>;
-    getProfile(req: any): Promise<any>;
+    login(dto: LoginDto): Promise<{
+        access_token: string;
+        user: {
+            id: string;
+            email: string;
+        };
+    }>;
+    forgotPassword(dto: ForgotPasswordDto): Promise<{
+        message: string;
+    }>;
+    resetPassword(dto: ResetPasswordDto): Promise<{
+        message: string;
+    }>;
 }

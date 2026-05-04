@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Cloud Vault Frontend
 
-## Getting Started
+A modern, high-performance web application built with Next.js 15, Tailwind CSS, and Shadcn UI. This project serves as the user interface for the Cloud Vault platform, providing a seamless experience for file management and cloud storage.
 
-First, run the development server:
+## 🚀 Tech Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Framework**: [Next.js 15+](https://nextjs.org/) (App Router)
+- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
+- **UI Components**: [Shadcn UI](https://ui.shadcn.com/)
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **Animations**: [Framer Motion](https://www.framer.com/motion/)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **State Management**: [Zustand](https://zustand-demo.pmnd.rs/) (Recommended)
+
+## 📂 Project Structure
+
+The project follows a modular and scalable directory structure, designed for large-scale enterprise applications:
+
+```text
+src/
+├── app/                # Next.js App Router (pages, layouts, loading, errors)
+├── assets/             # Static assets (images, icons, fonts)
+├── components/         # React components
+│   ├── ui/             # Base UI components (Shadcn)
+│   ├── common/         # Shared generic components
+│   ├── layout/         # Layout components (Navbar, Footer, Sidebar)
+│   └── modules/        # Feature-specific components (e.g., auth, dashboard)
+├── constants/          # Application constants and configuration
+├── hooks/              # Custom React hooks
+├── lib/                # Third-party library configurations and shared utilities
+├── services/           # API services and external integrations
+├── store/              # Global state management (e.g., Zustand/Redux)
+├── types/              # TypeScript interfaces and types
+└── styles/             # Global CSS and Tailwind configuration
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🛠️ Getting Started
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Prerequisites
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Node.js 18.17.0 or later
+- npm or yarn
 
-## Learn More
+### Installation
 
-To learn more about Next.js, take a look at the following resources:
+1. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+3. Run the development server:
+   ```bash
+   npm run dev
+   ```
 
-## Deploy on Vercel
+4. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🎨 Design Principles
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Responsive**: Mobile-first design approach.
+- **Accessible**: Adheres to WCAG guidelines using Radix UI primitives.
+- **Type-Safe**: Strict TypeScript configuration for robust development.
+- **Modular**: Atomic design principles for reusable components.
+
+## 📄 License
+
+This project is licensed under the MIT License.

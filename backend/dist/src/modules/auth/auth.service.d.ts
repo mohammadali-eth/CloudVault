@@ -1,21 +1,31 @@
 import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../../prisma/prisma.service';
-import { LoginDto } from './dto/login.dto';
+import { PrismaService } from '../../database/prisma.service';
+import { MailService } from '../../shared/mail.service';
+import { SignupDto, LoginDto, ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
 export declare class AuthService {
     private prisma;
     private jwtService;
-    private configService;
-    constructor(prisma: PrismaService, jwtService: JwtService, configService: ConfigService);
-    login(loginDto: LoginDto): Promise<{
+    private mailService;
+    constructor(prisma: PrismaService, jwtService: JwtService, mailService: MailService);
+    signup(dto: SignupDto): Promise<{
+        access_token: string;
         user: {
             id: string;
             email: string;
-            createdAt: Date;
-        };
-        tokens: {
-            accessToken: string;
-            refreshToken: string;
         };
     }>;
+    login(dto: LoginDto): Promise<{
+        access_token: string;
+        user: {
+            id: string;
+            email: string;
+        };
+    }>;
+    forgotPassword(dto: ForgotPasswordDto): Promise<{
+        message: string;
+    }>;
+    resetPassword(dto: ResetPasswordDto): Promise<{
+        message: string;
+    }>;
+    private generateTokens;
 }
