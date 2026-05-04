@@ -16,8 +16,21 @@ export function SignupForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const { setAuth, isAuthenticated } = useAuthStore();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && isAuthenticated) {
+      router.push("/dashboard");
+    }
+  }, [mounted, isAuthenticated, router]);
+
+  if (!mounted) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

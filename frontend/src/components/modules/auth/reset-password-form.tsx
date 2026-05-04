@@ -1,25 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { Loader2 } from "lucide-react";
+import { useAuthStore } from "@/store/auth-store";
 
 export function ResetPasswordForm() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
+  const { isAuthenticated } = useAuthStore();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && isAuthenticated) {
+      router.push("/dashboard");
+    }
+  }, [mounted, isAuthenticated, router]);
+
+  if (!mounted) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (password !== confirmPassword) {
       return toast.error("Passwords do not match");
     }
@@ -31,9 +53,9 @@ export function ResetPasswordForm() {
     setIsLoading(true);
 
     try {
-      await api.post("/auth/reset-password", { 
-        token, 
-        newPassword: password 
+      await api.post("/auth/reset-password", {
+        token,
+        newPassword: password,
       });
       toast.success("Password reset successfully");
       router.push("/login");
@@ -54,26 +76,34 @@ export function ResetPasswordForm() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">New Password</label>
-            <Input 
-              type="password" 
+            <Input
+              type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required 
+              required
             />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Confirm New Password</label>
-            <Input 
-              type="password" 
+            <Input
+              type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              required 
+              required
             />
           </div>
         </CardContent>
         <CardFooter>
-          <Button type="submit" className="w-full" disabled={isLoading || !token}>
-            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Reset password"}
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isLoading || !token}
+          >
+            {isLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              "Reset password"
+            )}
           </Button>
         </CardFooter>
       </form>

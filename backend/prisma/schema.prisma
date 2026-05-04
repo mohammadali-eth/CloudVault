@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,8 +7,7 @@ datasource db {
 }
 
 model User {
-  uuid             String    @default(uuid())
-  id               String    @id @unique
+  id               String    @id @default(uuid())
   email            String    @unique
   password         String
   name             String?
@@ -28,6 +24,8 @@ model File {
   url       String
   size      Int
   type      String
+  path      String   @default("/")
+  isFolder  Boolean  @default(false)
   ownerId   String
   owner     User     @relation(fields: [ownerId], references: [id])
   createdAt DateTime @default(now())

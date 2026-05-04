@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -9,11 +10,30 @@ import { useAuthStore } from "@/store/auth-store";
 export function Header() {
   const { isAuthenticated, logout } = useAuthStore();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleLogout = () => {
     logout();
     router.push("/");
   };
+
+  if (!mounted) {
+    return (
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/60">
+        <div className="container mx-auto flex h-16 items-center justify-between px-4">
+          <Link href="/" className="flex items-center gap-2">
+            <Cloud className="h-6 w-6 text-primary" />
+            <span className="text-xl font-bold tracking-tight">CloudVault</span>
+          </Link>
+          <div className="h-9 w-24 bg-muted animate-pulse rounded-md" />
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/60">

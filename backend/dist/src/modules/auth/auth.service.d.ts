@@ -12,6 +12,7 @@ export declare class AuthService {
         user: {
             id: string;
             email: string;
+            name: string | null;
         };
     }>;
     login(dto: LoginDto): Promise<{
@@ -19,6 +20,7 @@ export declare class AuthService {
         user: {
             id: string;
             email: string;
+            name: string | null;
         };
     }>;
     forgotPassword(dto: ForgotPasswordDto): Promise<{

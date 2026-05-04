@@ -33,7 +33,7 @@ export class AuthService {
       },
     });
 
-    return this.generateTokens(user.id, user.email);
+    return this.generateTokens(user.id, user.email, user.name);
   }
 
   async login(dto: LoginDto) {
@@ -51,7 +51,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    return this.generateTokens(user.id, user.email);
+    return this.generateTokens(user.id, user.email, user.name);
   }
 
   async forgotPassword(dto: ForgotPasswordDto) {
@@ -108,7 +108,7 @@ export class AuthService {
     return { message: 'Password successfully reset' };
   }
 
-  private async generateTokens(userId: string, email: string) {
+  private async generateTokens(userId: string, email: string, name: string | null) {
     const payload = { sub: userId, email };
 
     return {
@@ -116,6 +116,7 @@ export class AuthService {
       user: {
         id: userId,
         email,
+        name,
       },
     };
   }

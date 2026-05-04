@@ -1,11 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/auth-store";
@@ -15,8 +22,21 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const { setAuth, isAuthenticated } = useAuthStore();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && isAuthenticated) {
+      router.push("/dashboard");
+    }
+  }, [mounted, isAuthenticated, router]);
+
+  if (!mounted) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,42 +58,54 @@ export function LoginForm() {
     <Card className="w-full max-w-md">
       <CardHeader>
         <CardTitle className="text-2xl font-bold">Log in</CardTitle>
-        <CardDescription>Enter your credentials to access your vault</CardDescription>
+        <CardDescription>
+          Enter your credentials to access your vault
+        </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">Email</label>
-            <Input 
-              type="email" 
-              placeholder="name@example.com" 
+            <Input
+              type="email"
+              placeholder="name@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required 
+              required
             />
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">Password</label>
-              <Link href="/forgot-password" size="sm" className="text-xs text-primary hover:underline">
+              <Link
+                href="/forgot-password"
+                className="text-xs text-primary hover:underline"
+              >
                 Forgot password?
               </Link>
             </div>
-            <Input 
-              type="password" 
+            <Input
+              type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required 
+              required
             />
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Log in"}
+            {isLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              "Log in"
+            )}
           </Button>
           <div className="text-center text-sm">
             Don&apos;t have an account?{" "}
-            <Link href="/signup" className="text-primary hover:underline font-medium">
+            <Link
+              href="/signup"
+              className="text-primary hover:underline font-medium"
+            >
               Sign up
             </Link>
           </div>

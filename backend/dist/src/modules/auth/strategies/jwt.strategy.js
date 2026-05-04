@@ -9,28 +9,27 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PrismaService = void 0;
+exports.JwtStrategy = void 0;
 const common_1 = require("@nestjs/common");
-const client_1 = require("@prisma/client");
-const adapter_pg_1 = require("@prisma/adapter-pg");
+const passport_1 = require("@nestjs/passport");
+const passport_jwt_1 = require("passport-jwt");
 const config_1 = require("@nestjs/config");
-const pg_1 = require("pg");
-let PrismaService = class PrismaService extends client_1.PrismaClient {
+let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(passport_jwt_1.Strategy) {
     constructor(configService) {
-        const pool = new pg_1.Pool({ connectionString: configService.get('DATABASE_URL') });
-        const adapter = new adapter_pg_1.PrismaPg(pool);
-        super({ adapter });
+        super({
+            jwtFromRequest: passport_jwt_1.ExtractJwt.fromAuthHeaderAsBearerToken(),
+            ignoreExpiration: false,
+            secretOrKey: configService.get('JWT_SECRET') || 'fallback-secret-key',
+        });
     }
-    async onModuleInit() {
-        await this.$connect();
-    }
-    async onModuleDestroy() {
-        await this.$disconnect();
+    async validate(payload) {
+        console.log('Validating JWT payload:', payload);
+        return { id: payload.sub, email: payload.email };
     }
 };
-exports.PrismaService = PrismaService;
-exports.PrismaService = PrismaService = __decorate([
+exports.JwtStrategy = JwtStrategy;
+exports.JwtStrategy = JwtStrategy = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [config_1.ConfigService])
-], PrismaService);
-//# sourceMappingURL=prisma.service.js.map
+], JwtStrategy);
+//# sourceMappingURL=jwt.strategy.js.map

@@ -73,7 +73,7 @@ let AuthService = class AuthService {
                 name: dto.name,
             },
         });
-        return this.generateTokens(user.id, user.email);
+        return this.generateTokens(user.id, user.email, user.name);
     }
     async login(dto) {
         const user = await this.prisma.user.findUnique({
@@ -86,7 +86,7 @@ let AuthService = class AuthService {
         if (!isPasswordValid) {
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
-        return this.generateTokens(user.id, user.email);
+        return this.generateTokens(user.id, user.email, user.name);
     }
     async forgotPassword(dto) {
         const user = await this.prisma.user.findUnique({
@@ -130,13 +130,14 @@ let AuthService = class AuthService {
         });
         return { message: 'Password successfully reset' };
     }
-    async generateTokens(userId, email) {
+    async generateTokens(userId, email, name) {
         const payload = { sub: userId, email };
         return {
             access_token: await this.jwtService.signAsync(payload),
             user: {
                 id: userId,
                 email,
+                name,
             },
         };
     }

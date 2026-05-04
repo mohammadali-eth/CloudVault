@@ -10,8 +10,10 @@ exports.AuthModule = void 0;
 const common_1 = require("@nestjs/common");
 const jwt_1 = require("@nestjs/jwt");
 const config_1 = require("@nestjs/config");
+const passport_1 = require("@nestjs/passport");
 const auth_service_1 = require("./auth.service");
 const auth_controller_1 = require("./auth.controller");
+const jwt_strategy_1 = require("./strategies/jwt.strategy");
 const database_module_1 = require("../../database/database.module");
 const mail_service_1 = require("../../shared/mail.service");
 let AuthModule = class AuthModule {
@@ -21,6 +23,7 @@ exports.AuthModule = AuthModule = __decorate([
     (0, common_1.Module)({
         imports: [
             database_module_1.DatabaseModule,
+            passport_1.PassportModule,
             jwt_1.JwtModule.registerAsync({
                 inject: [config_1.ConfigService],
                 useFactory: (config) => ({
@@ -32,7 +35,8 @@ exports.AuthModule = AuthModule = __decorate([
             }),
         ],
         controllers: [auth_controller_1.AuthController],
-        providers: [auth_service_1.AuthService, mail_service_1.MailService],
+        providers: [auth_service_1.AuthService, mail_service_1.MailService, jwt_strategy_1.JwtStrategy],
+        exports: [auth_service_1.AuthService, passport_1.PassportModule],
     })
 ], AuthModule);
 //# sourceMappingURL=auth.module.js.map
