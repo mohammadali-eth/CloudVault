@@ -41,7 +41,7 @@ export declare class FilesController {
         providerFileId: string | null;
         ownerId: string;
     }>;
-    replaceFile(id: string, file: Express.Multer.File, req: any): Promise<{
+    replaceFile(id: string, file: Express.Multer.File, provider: string, req: any): Promise<{
         path: string;
         url: string;
         name: string;
@@ -54,4 +54,30 @@ export declare class FilesController {
         providerFileId: string | null;
         ownerId: string;
     }[]>;
+    renameFile(id: string, name: string, req: any): Promise<{
+        path: string;
+        url: string;
+        name: string;
+        id: string;
+        createdAt: Date;
+        size: number;
+        type: string;
+        isFolder: boolean;
+        provider: string;
+        providerFileId: string | null;
+        ownerId: string;
+    }>;
+    migrateFile(id: string, provider: string, req: any): Promise<{
+        path: string;
+        url: string;
+        name: string;
+        id: string;
+        createdAt: Date;
+        size: number;
+        type: string;
+        isFolder: boolean;
+        provider: string;
+        providerFileId: string | null;
+        ownerId: string;
+    } | null>;
 }

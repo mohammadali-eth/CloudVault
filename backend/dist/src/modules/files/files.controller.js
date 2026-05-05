@@ -35,8 +35,15 @@ let FilesController = class FilesController {
     async deleteFile(id, req) {
         return this.filesService.deleteFile(req.user.id, id);
     }
-    async replaceFile(id, file, req) {
-        return this.filesService.replaceFile(req.user.id, id, file);
+    async replaceFile(id, file, provider, req) {
+        console.log('Replacing file:', id, 'New provider:', provider);
+        return this.filesService.replaceFile(req.user.id, id, file, provider);
+    }
+    async renameFile(id, name, req) {
+        return this.filesService.renameFile(req.user.id, id, name);
+    }
+    async migrateFile(id, provider, req) {
+        return this.filesService.migrateFile(req.user.id, id, provider);
     }
 };
 exports.FilesController = FilesController;
@@ -73,11 +80,30 @@ __decorate([
     (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file')),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.UploadedFile)()),
-    __param(2, (0, common_1.Request)()),
+    __param(2, (0, common_2.Body)('provider')),
+    __param(3, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:paramtypes", [String, Object, String, Object]),
     __metadata("design:returntype", Promise)
 ], FilesController.prototype, "replaceFile", null);
+__decorate([
+    (0, common_1.Patch)(':id/rename'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_2.Body)('name')),
+    __param(2, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], FilesController.prototype, "renameFile", null);
+__decorate([
+    (0, common_1.Patch)(':id/migrate'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_2.Body)('provider')),
+    __param(2, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], FilesController.prototype, "migrateFile", null);
 exports.FilesController = FilesController = __decorate([
     (0, common_1.Controller)('files'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

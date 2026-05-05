@@ -285,4 +285,83 @@ export class FilesService {
       data: { name: newName },
     });
   }
+
+  async migrateFile(userId: string, fileId: string, targetProvider: string) {
+    const file = await this.prisma.file.findFirst({
+      where: { id: fileId, ownerId: userId },
+    });
+
+    if (!file) throw new NotFoundException('File not found');
+    if (file.provider === targetProvider) return file;
+
+    if (file.isFolder) {
+      // For folders, we update the provider for this folder and its children recursively
+      // Note: This only changes where NEW files will be uploaded within these folders
+      await this.prisma.file.update({
+        where: { id: fileId },
+        data: { provider: targetProvider },
+      });
+
+      // Also update all sub-folders/files path prefix (simplified recursive update)
+      const folderPathPrefix = `${file.path}${file.name}/`;
+      await this.prisma.file.updateMany({
+        where: {
+          ownerId: userId,
+          path: { startsWith: folderPathPrefix },
+        },
+        data: { provider: targetProvider },
+      });
+
+      return this.prisma.file.findUnique({ where: { id: fileId } });
+    }
+
+    // File migration logic
+    try {
+      let buffer: Buffer;
+
+      if (file.provider === 'google-drive' && file.providerFileId) {
+        const response = await this.drive.files.get(
+          {
+            fileId: file.providerFileId,
+            alt: 'media',
+          },
+          { responseType: 'arraybuffer' },
+        );
+        buffer = Buffer.from(response.data as ArrayBuffer);
+      } else if (file.provider === 'cloudinary') {
+        const response = await fetch(file.url);
+        if (!response.ok) throw new Error('Failed to download from Cloudinary');
+        buffer = Buffer.from(await response.arrayBuffer());
+      } else {
+        throw new Error('Unsupported source provider for migration');
+      }
+
+      const multerFile: any = {
+        buffer,
+        originalname: file.name,
+        mimetype: file.type,
+        size: file.size,
+      };
+
+      const originalPath = file.path;
+
+      // Delete from old provider
+      await this.deleteFile(userId, fileId);
+
+      // Upload to new provider (this creates a new DB record)
+      const results = await this.uploadFiles(
+        userId,
+        [multerFile],
+        originalPath,
+        [],
+        targetProvider,
+      );
+      return results[0];
+    } catch (error) {
+      console.error('Migration error:', error);
+      throw new InternalServerErrorException(
+        `Failed to migrate file: ${error.message}`,
+      );
+    }
+  }
 }

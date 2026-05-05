@@ -52,14 +52,14 @@ let FilesService = class FilesService {
             api_secret: this.configService.get('CLOUDINARY_API_SECRET'),
         });
     }
-    async ensureFoldersExist(userId, basePath, relativePath) {
+    async ensureFoldersExist(userId, basePath, relativePath, provider = 'google-drive') {
         if (!relativePath || !relativePath.includes('/'))
             return basePath;
         const parts = relativePath.split('/');
         parts.pop();
         let currentPath = basePath;
         for (const folderName of parts) {
-            if (!folderName)
+            if (!folderName || folderName === '.')
                 continue;
             const normalizedPath = currentPath.endsWith('/')
                 ? currentPath
@@ -81,6 +81,7 @@ let FilesService = class FilesService {
                         type: 'folder',
                         path: normalizedPath,
                         isFolder: true,
+                        provider: provider,
                         ownerId: userId,
                     },
                 });
@@ -95,7 +96,7 @@ let FilesService = class FilesService {
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
             const relativePath = relativePaths[i] || file.originalname;
-            const finalPath = await this.ensureFoldersExist(userId, path, relativePath);
+            const finalPath = await this.ensureFoldersExist(userId, path, relativePath, provider);
             try {
                 let uploadResult;
                 let fileUrl = '';
@@ -202,15 +203,95 @@ let FilesService = class FilesService {
             where: { id: fileId },
         });
     }
-    async replaceFile(userId, fileId, newFile) {
+    async replaceFile(userId, fileId, newFile, provider) {
         const oldFile = await this.prisma.file.findFirst({
             where: { id: fileId, ownerId: userId },
         });
         if (!oldFile)
             throw new common_1.NotFoundException('File not found');
         const filePath = oldFile.path;
+        const finalProvider = provider || oldFile.provider;
         await this.deleteFile(userId, fileId);
-        return this.uploadFiles(userId, [newFile], filePath);
+        return this.uploadFiles(userId, [newFile], filePath, [], finalProvider);
+    }
+    async renameFile(userId, fileId, newName) {
+        const file = await this.prisma.file.findFirst({
+            where: { id: fileId, ownerId: userId },
+        });
+        if (!file)
+            throw new common_1.NotFoundException('File not found');
+        if (file.provider === 'google-drive' && file.providerFileId) {
+            try {
+                await this.drive.files.update({
+                    fileId: file.providerFileId,
+                    requestBody: { name: newName },
+                });
+            }
+            catch (error) {
+                console.error('Google Drive rename error:', error);
+            }
+        }
+        return this.prisma.file.update({
+            where: { id: fileId },
+            data: { name: newName },
+        });
+    }
+    async migrateFile(userId, fileId, targetProvider) {
+        const file = await this.prisma.file.findFirst({
+            where: { id: fileId, ownerId: userId },
+        });
+        if (!file)
+            throw new common_1.NotFoundException('File not found');
+        if (file.provider === targetProvider)
+            return file;
+        if (file.isFolder) {
+            await this.prisma.file.update({
+                where: { id: fileId },
+                data: { provider: targetProvider },
+            });
+            const folderPathPrefix = `${file.path}${file.name}/`;
+            await this.prisma.file.updateMany({
+                where: {
+                    ownerId: userId,
+                    path: { startsWith: folderPathPrefix },
+                },
+                data: { provider: targetProvider },
+            });
+            return this.prisma.file.findUnique({ where: { id: fileId } });
+        }
+        try {
+            let buffer;
+            if (file.provider === 'google-drive' && file.providerFileId) {
+                const response = await this.drive.files.get({
+                    fileId: file.providerFileId,
+                    alt: 'media',
+                }, { responseType: 'arraybuffer' });
+                buffer = Buffer.from(response.data);
+            }
+            else if (file.provider === 'cloudinary') {
+                const response = await fetch(file.url);
+                if (!response.ok)
+                    throw new Error('Failed to download from Cloudinary');
+                buffer = Buffer.from(await response.arrayBuffer());
+            }
+            else {
+                throw new Error('Unsupported source provider for migration');
+            }
+            const multerFile = {
+                buffer,
+                originalname: file.name,
+                mimetype: file.type,
+                size: file.size,
+            };
+            const originalPath = file.path;
+            await this.deleteFile(userId, fileId);
+            const results = await this.uploadFiles(userId, [multerFile], originalPath, [], targetProvider);
+            return results[0];
+        }
+        catch (error) {
+            console.error('Migration error:', error);
+            throw new common_1.InternalServerErrorException(`Failed to migrate file: ${error.message}`);
+        }
     }
 };
 exports.FilesService = FilesService;

@@ -75,4 +75,13 @@ export class FilesController {
   ) {
     return this.filesService.renameFile(req.user.id, id, name);
   }
+
+  @Patch(':id/migrate')
+  async migrateFile(
+    @Param('id') id: string,
+    @Body('provider') provider: string,
+    @Request() req: any,
+  ) {
+    return this.filesService.migrateFile(req.user.id, id, provider);
+  }
 }

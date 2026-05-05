@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -63,26 +63,63 @@ export function FileReplace({
       onSuccess();
     } catch (error: any) {
       console.error("Replace Error:", error);
-      toast.error(error.response?.data?.message || "Failed to replace file", { id: "replace" });
+      toast.error(error.response?.data?.message || "Failed to replace file", {
+        id: "replace",
+      });
     } finally {
       setIsUploading(false);
     }
   };
 
+  const handleMigrate = async () => {
+    if (!file || provider === file.provider) return;
+
+    setIsUploading(true);
+    try {
+      toast.loading("Migrating platform...", { id: "migrate" });
+      await api.patch(`/files/${file.id}/migrate`, { provider });
+      toast.success("Platform migrated successfully!", { id: "migrate" });
+      onOpenChange(false);
+      onSuccess();
+    } catch (error: any) {
+      console.error("Migration Error:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to migrate platform",
+        {
+          id: "migrate",
+        },
+      );
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const isMigrateMode = !selectedFile && file && provider !== file.provider;
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Replace File</DialogTitle>
+          <DialogTitle>
+            {isMigrateMode ? "Migrate Platform" : "Replace File"}
+          </DialogTitle>
           <DialogDescription>
-            Choose a new platform or keep the current one, and select the new file.
+            {isMigrateMode
+              ? `Move this ${file.isFolder ? "folder" : "file"} from ${file.provider === "cloudinary" ? "Cloudinary" : "Google Drive"} to ${provider === "cloudinary" ? "Cloudinary" : "Google Drive"}.`
+              : "Choose a new platform or keep the current one, and select the new file."}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 pt-4">
           <div className="space-y-2">
-            <label className="text-xs font-medium text-muted-foreground">Select Platform</label>
-            <Tabs value={provider} onValueChange={setProvider} className="w-full">
+            <label className="text-xs font-medium text-muted-foreground">
+              Select Platform
+            </label>
+            <Tabs
+              value={provider}
+              onValueChange={setProvider}
+              className="w-full"
+            >
               <TabsList className="grid w-full grid-cols-2 h-10">
                 <TabsTrigger value="google-drive" className="gap-2">
                   <HardDrive className="w-4 h-4" /> Google Drive
@@ -94,34 +131,42 @@ export function FileReplace({
             </Tabs>
           </div>
 
-          <div 
+          <div
             onClick={() => document.getElementById("replace-input")?.click()}
             className={`
               border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
               ${selectedFile ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"}
             `}
           >
-            <input 
-              type="file" 
-              id="replace-input" 
-              className="hidden" 
-              onChange={handleFileChange} 
+            <input
+              type="file"
+              id="replace-input"
+              className="hidden"
+              onChange={handleFileChange}
             />
             <div className="flex flex-col items-center gap-3">
               {selectedFile ? (
                 <>
                   <CheckCircleIcon className="w-10 h-10 text-primary" />
                   <div className="space-y-1 text-center">
-                    <p className="text-sm font-medium truncate max-w-[200px]">{selectedFile.name}</p>
-                    <p className="text-xs text-muted-foreground">Click to change file</p>
+                    <p className="text-sm font-medium truncate max-w-[200px]">
+                      {selectedFile.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Click to change file
+                    </p>
                   </div>
                 </>
               ) : (
                 <>
                   <Upload className="w-10 h-10 text-muted-foreground" />
                   <div className="space-y-1 text-center">
-                    <p className="text-sm font-medium text-foreground">Select new file</p>
-                    <p className="text-xs text-muted-foreground">or drag and drop here</p>
+                    <p className="text-sm font-medium text-foreground">
+                      Select new file
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      or drag and drop here
+                    </p>
                   </div>
                 </>
               )}
@@ -138,14 +183,16 @@ export function FileReplace({
             Cancel
           </Button>
           <Button
-            onClick={handleReplace}
-            disabled={!selectedFile || isUploading}
+            onClick={isMigrateMode ? handleMigrate : handleReplace}
+            disabled={(!selectedFile && !isMigrateMode) || isUploading}
           >
             {isUploading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Replacing...
+                {isMigrateMode ? "Migrating..." : "Replacing..."}
               </>
+            ) : isMigrateMode ? (
+              "Migrate Platform"
             ) : (
               "Replace Now"
             )}

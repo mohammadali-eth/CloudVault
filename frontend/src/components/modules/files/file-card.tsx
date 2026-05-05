@@ -11,12 +11,13 @@ import {
   HardDrive,
   Pencil,
   Check as CheckIcon,
-  X as XIcon
+  X as XIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useState } from "react";
 import { toast } from "sonner";
+import noPreviewImage from "@/assets/images/NoPreview.png";
 
 interface FileCardProps {
   file: any;
@@ -97,8 +98,8 @@ export function FileCard({
             className="w-full h-full object-contain cursor-pointer"
             onClick={() => window.open(file.url, "_blank")}
             onError={(e) => {
-              (e.target as HTMLImageElement).src =
-                "https://placehold.co/600x400?text=No+Preview";
+              const target = e.target as HTMLImageElement;
+              target.src = typeof noPreviewImage === 'string' ? noPreviewImage : noPreviewImage.src;
             }}
           />
         ) : (
@@ -119,13 +120,13 @@ export function FileCard({
         <div className="group/title">
           {isEditing ? (
             <div className="flex items-center gap-1">
-              <input 
+              <input
                 type="text"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleRename();
-                  if (e.key === 'Escape') {
+                  if (e.key === "Enter") handleRename();
+                  if (e.key === "Escape") {
                     setIsEditing(false);
                     setNewName(file.name);
                   }
@@ -134,7 +135,7 @@ export function FileCard({
                 autoFocus
                 disabled={isUpdating}
               />
-              <button 
+              <button
                 onClick={handleRename}
                 className="p-1 hover:text-green-500 transition-colors"
                 disabled={isUpdating}
@@ -144,13 +145,13 @@ export function FileCard({
             </div>
           ) : (
             <div className="flex items-center justify-between gap-2">
-              <h3 
-                className="font-bold text-base truncate flex-1" 
+              <h3
+                className="font-bold text-base truncate flex-1"
                 title={file.name}
               >
                 {file.name}
               </h3>
-              <button 
+              <button
                 onClick={() => setIsEditing(true)}
                 className="opacity-0 group-hover/title:opacity-100 p-1 hover:text-primary transition-all"
               >
