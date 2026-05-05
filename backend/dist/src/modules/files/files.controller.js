@@ -17,13 +17,17 @@ const common_1 = require("@nestjs/common");
 const platform_express_1 = require("@nestjs/platform-express");
 const files_service_1 = require("./files.service");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
+const common_2 = require("@nestjs/common");
 let FilesController = class FilesController {
     filesService;
     constructor(filesService) {
         this.filesService = filesService;
     }
-    async uploadFiles(files, req, path) {
-        return this.filesService.uploadFiles(req.user.id, files, path || '/');
+    async uploadFiles(files, req, relativePaths, path, provider) {
+        const pathsArray = Array.isArray(relativePaths)
+            ? relativePaths
+            : [relativePaths];
+        return this.filesService.uploadFiles(req.user.id, files, path || '/', pathsArray, provider || 'google-drive');
     }
     async getFiles(req, path) {
         return this.filesService.findAll(req.user.id, path || '/');
@@ -41,9 +45,11 @@ __decorate([
     (0, common_1.UseInterceptors)((0, platform_express_1.FilesInterceptor)('files')),
     __param(0, (0, common_1.UploadedFiles)()),
     __param(1, (0, common_1.Request)()),
-    __param(2, (0, common_1.Query)('path')),
+    __param(2, (0, common_2.Body)('relativePaths')),
+    __param(3, (0, common_1.Query)('path')),
+    __param(4, (0, common_2.Body)('provider')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Array, Object, String]),
+    __metadata("design:paramtypes", [Array, Object, Object, String, String]),
     __metadata("design:returntype", Promise)
 ], FilesController.prototype, "uploadFiles", null);
 __decorate([

@@ -2,14 +2,17 @@ import { FilesService } from './files.service';
 export declare class FilesController {
     private readonly filesService;
     constructor(filesService: FilesService);
-    uploadFiles(files: Express.Multer.File[], req: any, path: string): Promise<{
+    uploadFiles(files: Express.Multer.File[], req: any, relativePaths: string | string[], path: string, provider: string): Promise<{
         path: string;
         url: string;
         name: string;
         id: string;
         createdAt: Date;
-        type: string;
         size: number;
+        type: string;
+        isFolder: boolean;
+        provider: string;
+        providerFileId: string | null;
         ownerId: string;
     }[]>;
     getFiles(req: any, path: string): Promise<{
@@ -18,8 +21,11 @@ export declare class FilesController {
         name: string;
         id: string;
         createdAt: Date;
-        type: string;
         size: number;
+        type: string;
+        isFolder: boolean;
+        provider: string;
+        providerFileId: string | null;
         ownerId: string;
     }[]>;
     deleteFile(id: string, req: any): Promise<{
@@ -28,8 +34,11 @@ export declare class FilesController {
         name: string;
         id: string;
         createdAt: Date;
-        type: string;
         size: number;
+        type: string;
+        isFolder: boolean;
+        provider: string;
+        providerFileId: string | null;
         ownerId: string;
     }>;
     replaceFile(id: string, file: Express.Multer.File, req: any): Promise<{
@@ -38,8 +47,11 @@ export declare class FilesController {
         name: string;
         id: string;
         createdAt: Date;
-        type: string;
         size: number;
+        type: string;
+        isFolder: boolean;
+        provider: string;
+        providerFileId: string | null;
         ownerId: string;
     }[]>;
 }

@@ -15,6 +15,7 @@ const prisma_service_1 = require("../../database/prisma.service");
 const googleapis_1 = require("googleapis");
 const config_1 = require("@nestjs/config");
 const stream_1 = require("stream");
+const cloudinary_1 = require("cloudinary");
 let FilesService = class FilesService {
     prisma;
     configService;
@@ -33,47 +34,125 @@ let FilesService = class FilesService {
         }
         else {
             const clientEmail = this.configService.get('GOOGLE_DRIVE_CLIENT_EMAIL');
-            const privateKey = this.configService.get('GOOGLE_DRIVE_PRIVATE_KEY')?.replace(/\\n/g, '\n');
-            const auth = new googleapis_1.google.auth.JWT({
-                email: clientEmail,
-                key: privateKey,
-                scopes: ['https://www.googleapis.com/auth/drive'],
-            });
-            this.drive = googleapis_1.google.drive({ version: 'v3', auth });
+            const privateKey = this.configService
+                .get('GOOGLE_DRIVE_PRIVATE_KEY')
+                ?.replace(/\\n/g, '\n');
+            if (clientEmail && privateKey) {
+                const auth = new googleapis_1.google.auth.JWT({
+                    email: clientEmail,
+                    key: privateKey,
+                    scopes: ['https://www.googleapis.com/auth/drive'],
+                });
+                this.drive = googleapis_1.google.drive({ version: 'v3', auth });
+            }
         }
+        cloudinary_1.v2.config({
+            cloud_name: this.configService.get('CLOUDINARY_CLOUD_NAME'),
+            api_key: this.configService.get('CLOUDINARY_API_KEY'),
+            api_secret: this.configService.get('CLOUDINARY_API_SECRET'),
+        });
     }
-    async uploadFiles(userId, files, path = '/') {
+    async ensureFoldersExist(userId, basePath, relativePath) {
+        if (!relativePath || !relativePath.includes('/'))
+            return basePath;
+        const parts = relativePath.split('/');
+        parts.pop();
+        let currentPath = basePath;
+        for (const folderName of parts) {
+            if (!folderName)
+                continue;
+            const normalizedPath = currentPath.endsWith('/')
+                ? currentPath
+                : `${currentPath}/`;
+            const existingFolder = await this.prisma.file.findFirst({
+                where: {
+                    ownerId: userId,
+                    path: normalizedPath,
+                    name: folderName,
+                    isFolder: true,
+                },
+            });
+            if (!existingFolder) {
+                await this.prisma.file.create({
+                    data: {
+                        name: folderName,
+                        url: '',
+                        size: 0,
+                        type: 'folder',
+                        path: normalizedPath,
+                        isFolder: true,
+                        ownerId: userId,
+                    },
+                });
+            }
+            currentPath = `${normalizedPath}${folderName}/`;
+        }
+        return currentPath.endsWith('/') ? currentPath : `${currentPath}/`;
+    }
+    async uploadFiles(userId, files, path = '/', relativePaths = [], provider = 'google-drive') {
         const results = [];
         const folderId = this.configService.get('GOOGLE_DRIVE_FOLDER_ID');
-        for (const file of files) {
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const relativePath = relativePaths[i] || file.originalname;
+            const finalPath = await this.ensureFoldersExist(userId, path, relativePath);
             try {
-                const driveResponse = await this.drive.files.create({
-                    requestBody: {
-                        name: file.originalname,
-                        parents: folderId ? [folderId] : [],
-                    },
-                    media: {
-                        mimeType: file.mimetype,
-                        body: stream_1.Readable.from(file.buffer),
-                    },
-                    fields: 'id, webViewLink',
-                    supportsAllDrives: true,
-                });
+                let uploadResult;
+                let fileUrl = '';
+                let providerFileId = '';
+                if (provider === 'cloudinary') {
+                    uploadResult = (await new Promise((resolve, reject) => {
+                        const uploadStream = cloudinary_1.v2.uploader.upload_stream({
+                            folder: 'cloud-vault',
+                            resource_type: 'auto',
+                        }, (error, result) => {
+                            if (error)
+                                reject(new Error(error.message));
+                            else
+                                resolve(result);
+                        });
+                        stream_1.Readable.from(file.buffer).pipe(uploadStream);
+                    }));
+                    fileUrl = uploadResult.secure_url;
+                    providerFileId = uploadResult.public_id;
+                }
+                else {
+                    if (!this.drive) {
+                        throw new Error('Google Drive not configured');
+                    }
+                    const driveResponse = await this.drive.files.create({
+                        requestBody: {
+                            name: file.originalname,
+                            parents: folderId ? [folderId] : [],
+                        },
+                        media: {
+                            mimeType: file.mimetype,
+                            body: stream_1.Readable.from(file.buffer),
+                        },
+                        fields: 'id, webViewLink',
+                        supportsAllDrives: true,
+                    });
+                    fileUrl = driveResponse.data.webViewLink || '';
+                    providerFileId = driveResponse.data.id || '';
+                }
                 const dbFile = await this.prisma.file.create({
                     data: {
                         name: file.originalname,
-                        url: driveResponse.data.webViewLink || '',
+                        url: fileUrl,
                         size: file.size,
                         type: file.mimetype,
-                        path: path,
+                        path: finalPath,
+                        isFolder: false,
+                        provider: provider,
+                        providerFileId: providerFileId,
                         ownerId: userId,
                     },
                 });
                 results.push(dbFile);
             }
             catch (error) {
-                console.error('Drive upload error:', error);
-                throw new common_1.InternalServerErrorException(`Failed to upload ${file.originalname}`);
+                console.error(`${provider} upload error:`, error);
+                throw new common_1.InternalServerErrorException(`Failed to upload ${file.originalname} to ${provider}`);
             }
         }
         return results;
@@ -95,15 +174,29 @@ let FilesService = class FilesService {
             throw new common_1.NotFoundException('File not found');
         }
         try {
-            if (file.url) {
-                const match = file.url.match(/d\/([a-zA-Z0-9_-]+)/);
-                if (match && match[1]) {
-                    await this.drive.files.delete({ fileId: match[1], supportsAllDrives: true });
+            if (file.provider === 'cloudinary' && file.providerFileId) {
+                await cloudinary_1.v2.uploader.destroy(file.providerFileId);
+            }
+            else if (file.provider === 'google-drive' || !file.provider) {
+                if (file.providerFileId) {
+                    await this.drive.files.delete({
+                        fileId: file.providerFileId,
+                        supportsAllDrives: true,
+                    });
+                }
+                else if (file.url) {
+                    const match = file.url.match(/d\/([a-zA-Z0-9_-]+)/);
+                    if (match && match[1]) {
+                        await this.drive.files.delete({
+                            fileId: match[1],
+                            supportsAllDrives: true,
+                        });
+                    }
                 }
             }
         }
         catch (error) {
-            console.error('Drive delete error (ignoring):', error);
+            console.error(`${file.provider || 'Drive'} delete error (ignoring):`, error);
         }
         return this.prisma.file.delete({
             where: { id: fileId },

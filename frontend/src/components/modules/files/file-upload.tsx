@@ -12,9 +12,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Progress } from "../../ui/progress";
-import { Upload, File, X, CheckCircle2, Loader2 } from "lucide-react";
+import { Upload, File, X, CheckCircle2, Loader2, Cloud, HardDrive } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function FileUpload({
   onUploadSuccess,
@@ -27,9 +28,12 @@ export function FileUpload({
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
+  const [provider, setProvider] = useState("google-drive");
+  const [customNames, setCustomNames] = useState<string[]>([]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setFiles((prev) => [...prev, ...acceptedFiles]);
+    setCustomNames((prev) => [...prev, ...acceptedFiles.map(f => f.name)]);
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
@@ -39,6 +43,7 @@ export function FileUpload({
 
   const removeFile = (index: number) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
+    setCustomNames((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleUpload = async () => {
@@ -48,17 +53,20 @@ export function FileUpload({
     setProgress(0);
 
     const formData = new FormData();
-    // Append paths first for Multer compatibility
-    files.forEach((file: any) => {
-      const path = file.webkitRelativePath || file.path || file.name;
-      // Strip leading slash if any
-      const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    files.forEach((file: any, index) => {
+      const name = customNames[index] || file.name;
+      // If it has a path (from folder upload), preserve the path but use the custom name for the file part
+      let finalPath = file.webkitRelativePath || file.path || file.name;
+      const pathParts = finalPath.split('/');
+      pathParts[pathParts.length - 1] = name;
+      finalPath = pathParts.join('/');
+
+      const cleanPath = finalPath.replace(/^\.\//, '').replace(/^\//, '');
       formData.append("relativePaths", cleanPath);
+      formData.append("files", file, name); // Use custom name in Multer
     });
-    
-    files.forEach((file) => {
-      formData.append("files", file);
-    });
+
+    formData.append("provider", provider);
 
     try {
       // Mock progress since we are doing a single request for multiple files
@@ -106,11 +114,26 @@ export function FileUpload({
         <DialogHeader>
           <DialogTitle>Upload Files</DialogTitle>
           <DialogDescription>
-            Drag and drop your files here or click to browse.
+            Choose your platform and upload your files.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-muted-foreground">Select Platform</label>
+            <Tabs value={provider} onValueChange={setProvider} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 h-10">
+                <TabsTrigger value="google-drive" className="gap-2">
+                  <HardDrive className="w-4 h-4" /> Google Drive
+                </TabsTrigger>
+                <TabsTrigger value="cloudinary" className="gap-2">
+                  <Cloud className="w-4 h-4" /> Cloudinary
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
           <div 
             {...getRootProps()} 
             className={`
@@ -148,6 +171,7 @@ export function FileUpload({
             </div>
           </div>
         </div>
+      </div>
 
         {files.length > 0 && (
           <div className="mt-4 space-y-2 max-h-48 overflow-y-auto pr-2">
@@ -157,11 +181,20 @@ export function FileUpload({
                 className="flex items-center justify-between p-2 bg-muted rounded-md text-sm border"
               >
                 <div className="flex items-center gap-2 min-w-0 pr-4">
-                  <File className="w-4 h-4 flex-shrink-0" />
-                  <span className="truncate" title={file.webkitRelativePath || file.path || file.name}>
-                    {file.webkitRelativePath || file.path || file.name}
-                  </span>
-                  <span className="text-xs text-muted-foreground flex-shrink-0">
+                  <File className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={customNames[index] || ""}
+                    onChange={(e) => {
+                      const newNames = [...customNames];
+                      newNames[index] = e.target.value;
+                      setCustomNames(newNames);
+                    }}
+                    className="bg-transparent border-b border-transparent hover:border-muted-foreground/30 focus:border-primary focus:outline-none transition-colors w-full h-7 px-1"
+                    placeholder="File name"
+                    disabled={isUploading}
+                  />
+                  <span className="text-[10px] text-muted-foreground flex-shrink-0 opacity-60">
                     ({(file.size / 1024 / 1024).toFixed(2)} MB)
                   </span>
                 </div>

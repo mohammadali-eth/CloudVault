@@ -1,10 +1,20 @@
-import { Injectable, UnauthorizedException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../database/prisma.service';
 import { MailService } from '../../shared/mail.service';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-import { SignupDto, LoginDto, ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
+import {
+  SignupDto,
+  LoginDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+} from './dto/auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -61,7 +71,10 @@ export class AuthService {
 
     if (!user) {
       // For security, don't reveal if user exists
-      return { message: 'If an account exists with this email, a reset link has been sent.' };
+      return {
+        message:
+          'If an account exists with this email, a reset link has been sent.',
+      };
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
@@ -77,7 +90,10 @@ export class AuthService {
 
     await this.mailService.sendPasswordResetEmail(user.email, resetToken);
 
-    return { message: 'If an account exists with this email, a reset link has been sent.' };
+    return {
+      message:
+        'If an account exists with this email, a reset link has been sent.',
+    };
   }
 
   async resetPassword(dto: ResetPasswordDto) {
@@ -108,7 +124,11 @@ export class AuthService {
     return { message: 'Password successfully reset' };
   }
 
-  private async generateTokens(userId: string, email: string, name: string | null) {
+  private async generateTokens(
+    userId: string,
+    email: string,
+    name: string | null,
+  ) {
     const payload = { sub: userId, email };
 
     return {

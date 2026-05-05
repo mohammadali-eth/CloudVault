@@ -93,7 +93,9 @@ let AuthService = class AuthService {
             where: { email: dto.email },
         });
         if (!user) {
-            return { message: 'If an account exists with this email, a reset link has been sent.' };
+            return {
+                message: 'If an account exists with this email, a reset link has been sent.',
+            };
         }
         const resetToken = crypto.randomBytes(32).toString('hex');
         const resetTokenExpiry = new Date(Date.now() + 3600000);
@@ -105,7 +107,9 @@ let AuthService = class AuthService {
             },
         });
         await this.mailService.sendPasswordResetEmail(user.email, resetToken);
-        return { message: 'If an account exists with this email, a reset link has been sent.' };
+        return {
+            message: 'If an account exists with this email, a reset link has been sent.',
+        };
     }
     async resetPassword(dto) {
         const user = await this.prisma.user.findFirst({

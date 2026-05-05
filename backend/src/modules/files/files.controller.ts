@@ -1,16 +1,17 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Delete, 
-  Param, 
-  UseInterceptors, 
-  UploadedFiles, 
-  UseGuards, 
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Param,
+  UseInterceptors,
+  UploadedFiles,
+  UseGuards,
   Request,
   Query,
   Put,
-  UploadedFile
+  Patch,
+  UploadedFile,
 } from '@nestjs/common';
 import { FilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { FilesService } from './files.service';
@@ -29,10 +30,19 @@ export class FilesController {
     @UploadedFiles() files: Express.Multer.File[],
     @Request() req: any,
     @Body('relativePaths') relativePaths: string | string[],
-    @Query('path') path: string
+    @Query('path') path: string,
+    @Body('provider') provider: string,
   ) {
-    const pathsArray = Array.isArray(relativePaths) ? relativePaths : [relativePaths];
-    return this.filesService.uploadFiles(req.user.id, files, path || '/', pathsArray);
+    const pathsArray = Array.isArray(relativePaths)
+      ? relativePaths
+      : [relativePaths];
+    return this.filesService.uploadFiles(
+      req.user.id,
+      files,
+      path || '/',
+      pathsArray,
+      provider || 'google-drive',
+    );
   }
 
   @Get()
@@ -50,8 +60,19 @@ export class FilesController {
   async replaceFile(
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
-    @Request() req: any
+    @Body('provider') provider: string,
+    @Request() req: any,
   ) {
-    return this.filesService.replaceFile(req.user.id, id, file);
+    console.log('Replacing file:', id, 'New provider:', provider);
+    return this.filesService.replaceFile(req.user.id, id, file, provider);
+  }
+
+  @Patch(':id/rename')
+  async renameFile(
+    @Param('id') id: string,
+    @Body('name') name: string,
+    @Request() req: any,
+  ) {
+    return this.filesService.renameFile(req.user.id, id, name);
   }
 }

@@ -26,6 +26,8 @@ model File {
   type      String
   path      String   @default("/")
   isFolder  Boolean  @default(false)
+  provider  String   @default("google-drive")
+  providerFileId String?
   ownerId   String
   owner     User     @relation(fields: [ownerId], references: [id])
   createdAt DateTime @default(now())

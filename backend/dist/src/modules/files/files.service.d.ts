@@ -5,14 +5,18 @@ export declare class FilesService {
     private configService;
     private drive;
     constructor(prisma: PrismaService, configService: ConfigService);
-    uploadFiles(userId: string, files: Express.Multer.File[], path?: string): Promise<{
+    private ensureFoldersExist;
+    uploadFiles(userId: string, files: Express.Multer.File[], path?: string, relativePaths?: string[], provider?: string): Promise<{
         path: string;
         url: string;
         name: string;
         id: string;
         createdAt: Date;
-        type: string;
         size: number;
+        type: string;
+        isFolder: boolean;
+        provider: string;
+        providerFileId: string | null;
         ownerId: string;
     }[]>;
     findAll(userId: string, path?: string): Promise<{
@@ -21,8 +25,11 @@ export declare class FilesService {
         name: string;
         id: string;
         createdAt: Date;
-        type: string;
         size: number;
+        type: string;
+        isFolder: boolean;
+        provider: string;
+        providerFileId: string | null;
         ownerId: string;
     }[]>;
     deleteFile(userId: string, fileId: string): Promise<{
@@ -31,8 +38,11 @@ export declare class FilesService {
         name: string;
         id: string;
         createdAt: Date;
-        type: string;
         size: number;
+        type: string;
+        isFolder: boolean;
+        provider: string;
+        providerFileId: string | null;
         ownerId: string;
     }>;
     replaceFile(userId: string, fileId: string, newFile: Express.Multer.File): Promise<{
@@ -41,8 +51,11 @@ export declare class FilesService {
         name: string;
         id: string;
         createdAt: Date;
-        type: string;
         size: number;
+        type: string;
+        isFolder: boolean;
+        provider: string;
+        providerFileId: string | null;
         ownerId: string;
     }[]>;
 }

@@ -11,21 +11,24 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { 
-  File as FileIcon, 
-  HardDrive, 
-  Clock, 
-  LogOut, 
-  Trash2, 
-  RefreshCw, 
+import {
+  File as FileIcon,
+  HardDrive,
+  Clock,
+  LogOut,
+  Trash2,
+  RefreshCw,
   ExternalLink,
   ChevronRight,
   Loader2,
   Upload,
   Folder,
-  ArrowLeft
+  ArrowLeft,
+  Cloud,
 } from "lucide-react";
 import { FileUpload } from "@/components/modules/files/file-upload";
+import { FileCard } from "@/components/modules/files/file-card";
+import { FileReplace } from "@/components/modules/files/file-replace";
 import api from "@/lib/api";
 import { toast } from "sonner";
 
@@ -35,8 +38,7 @@ export default function DashboardPage() {
   const [files, setFiles] = useState<any[]>([]);
   const [currentPath, setCurrentPath] = useState("/");
   const [isLoading, setIsLoading] = useState(true);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [replacingFileId, setReplacingFileId] = useState<string | null>(null);
+  const [replacingFile, setReplacingFile] = useState<any | null>(null);
 
   const fetchFiles = useCallback(async () => {
     try {
@@ -78,43 +80,34 @@ export default function DashboardPage() {
     }
   };
 
-  const handleReplaceClick = (id: string) => {
-    setReplacingFileId(id);
-    fileInputRef.current?.click();
+  const handleReplaceClick = (file: any) => {
+    setReplacingFile(file);
   };
 
   const handleNavigateFolder = (folderName: string) => {
-    const newPath = currentPath === '/' ? `/${folderName}/` : `${currentPath}${folderName}/`;
+    const newPath =
+      currentPath === "/" ? `/${folderName}/` : `${currentPath}${folderName}/`;
     setCurrentPath(newPath);
   };
 
   const handleGoBack = () => {
-    if (currentPath === '/') return;
-    const parts = currentPath.split('/').filter(Boolean);
+    if (currentPath === "/") return;
+    const parts = currentPath.split("/").filter(Boolean);
     parts.pop(); // remove last folder
-    const newPath = parts.length === 0 ? '/' : `/${parts.join('/')}/`;
+    const newPath = parts.length === 0 ? "/" : `/${parts.join("/")}/`;
     setCurrentPath(newPath);
   };
 
-  const handleFileReplace = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !replacingFileId) return;
 
-    const formData = new FormData();
-    formData.append("file", file);
 
+  const handleRename = async (fileId: string, newName: string) => {
     try {
-      toast.loading("Replacing file...", { id: "replace" });
-      await api.put(`/files/${replacingFileId}`, formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-      });
-      toast.success("File replaced", { id: "replace" });
+      await api.patch(`/files/${fileId}/rename`, { name: newName });
+      toast.success("File renamed");
       fetchFiles();
     } catch (error) {
-      toast.error("Failed to replace file", { id: "replace" });
-    } finally {
-      setReplacingFileId(null);
-      e.target.value = "";
+      toast.error("Failed to rename file");
+      throw error;
     }
   };
 
@@ -129,11 +122,11 @@ export default function DashboardPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        className="hidden" 
-        onChange={handleFileReplace} 
+      <FileReplace 
+        isOpen={!!replacingFile}
+        onOpenChange={(open) => !open && setReplacingFile(null)}
+        file={replacingFile}
+        onSuccess={fetchFiles}
       />
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
@@ -142,19 +135,21 @@ export default function DashboardPage() {
             Welcome back, {user.name}
           </h1>
           <div className="flex items-center gap-2 text-muted-foreground text-sm mt-1">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               className="h-6 px-2 -ml-2 text-muted-foreground hover:text-primary"
               onClick={handleGoBack}
-              disabled={currentPath === '/'}
+              disabled={currentPath === "/"}
             >
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <HardDrive className="w-4 h-4" />
             <span>Drive</span>
             <ChevronRight className="w-4 h-4" />
-            <span className="font-medium text-foreground truncate max-w-[200px]">{currentPath}</span>
+            <span className="font-medium text-foreground truncate max-w-[200px]">
+              {currentPath}
+            </span>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -199,35 +194,47 @@ export default function DashboardPage() {
               Manage your documents and folder structure.
             </CardDescription>
           </div>
-          <Button variant="ghost" size="sm" onClick={fetchFiles} disabled={isLoading}>
-            {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={fetchFiles}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
           </Button>
         </CardHeader>
         <CardContent>
-          <div className="space-y-1">
-            {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                <Loader2 className="w-8 h-8 animate-spin mb-4" />
-                <p>Fetching your files...</p>
-              </div>
-            ) : files.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed rounded-xl">
-                <Upload className="w-12 h-12 text-muted-foreground mb-4 opacity-20" />
-                <p className="text-muted-foreground font-medium">No files yet</p>
-                <p className="text-sm text-muted-foreground">Upload a file or folder to get started</p>
-              </div>
-            ) : (
-              files.map((file) => (
-                <FileRow 
-                  key={file.id} 
-                  file={file} 
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <Loader2 className="w-8 h-8 animate-spin mb-4" />
+              <p>Fetching your files...</p>
+            </div>
+          ) : files.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed rounded-xl">
+              <Upload className="w-12 h-12 text-muted-foreground mb-4 opacity-20" />
+              <p className="text-muted-foreground font-medium">No files yet</p>
+              <p className="text-sm text-muted-foreground">
+                Upload a file or folder to get started
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {files.map((file) => (
+                <FileCard
+                  key={file.id}
+                  file={file}
                   onDelete={() => handleDelete(file.id)}
-                  onReplace={() => handleReplaceClick(file.id)}
+                  onReplace={() => handleReplaceClick(file)}
                   onNavigate={() => handleNavigateFolder(file.name)}
+                  onRename={(newName) => handleRename(file.id, newName)}
                 />
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -258,78 +265,5 @@ function StatCard({
         <p className="text-xs text-muted-foreground mt-1">{description}</p>
       </CardContent>
     </Card>
-  );
-}
-
-function FileRow({
-  file,
-  onDelete,
-  onReplace,
-  onNavigate,
-}: {
-  file: any;
-  onDelete: () => void;
-  onReplace: () => void;
-  onNavigate: () => void;
-}) {
-  const formatSize = (bytes: number) => {
-    if (bytes === 0) return "0 B";
-    const k = 1024;
-    const sizes = ["B", "KB", "MB", "GB", "TB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
-  };
-
-  return (
-    <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-all group border border-transparent hover:border-border">
-      <div 
-        className={`flex items-center gap-3 min-w-0 ${file.isFolder ? 'cursor-pointer hover:underline' : ''}`}
-        onClick={() => file.isFolder && onNavigate()}
-      >
-        <div className="p-2 rounded-lg bg-primary/5 text-primary group-hover:bg-primary/10 transition-colors">
-          {file.isFolder ? <Folder className="w-5 h-5 fill-primary/20" /> : <FileIcon className="w-5 h-5" />}
-        </div>
-        <div className="min-w-0">
-          <div className="text-sm font-medium truncate max-w-[200px] md:max-w-md" title={file.name}>
-            {file.name}
-          </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {!file.isFolder && <span>{formatSize(file.size)}</span>}
-            {!file.isFolder && <span>•</span>}
-            <span>{new Date(file.createdAt).toLocaleDateString()}</span>
-          </div>
-        </div>
-      </div>
-      
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        {file.isFolder ? (
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8 text-muted-foreground hover:text-primary" 
-            onClick={onNavigate}
-          >
-            <ChevronRight className="w-4 h-4" />
-          </Button>
-        ) : (
-          <>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-8 w-8 text-muted-foreground hover:text-primary" 
-              onClick={() => window.open(file.url, '_blank')}
-            >
-              <ExternalLink className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={onReplace}>
-              <RefreshCw className="w-4 h-4" />
-            </Button>
-          </>
-        )}
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={onDelete}>
-          <Trash2 className="w-4 h-4" />
-        </Button>
-      </div>
-    </div>
   );
 }
