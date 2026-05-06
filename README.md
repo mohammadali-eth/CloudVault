@@ -2,7 +2,7 @@
 
 Cloud Vault is a premium, multi-platform document management system that unifies storage from Google Drive, Cloudinary, and Telegram into a single, sleek dashboard. It allows users to upload, manage, and migrate files across different cloud providers seamlessly.
 
-![Dashboard Preview](https://via.placeholder.com/1200x600/121212/ffffff?text=Cloud+Vault+Dashboard)
+![Dashboard Preview](https://t.me/c/1191852607/31)
 
 ## ✨ Features
 
@@ -24,6 +24,7 @@ Cloud Vault is a premium, multi-platform document management system that unifies
 ## 🛠️ Tech Stack
 
 ### Frontend
+
 - **Framework**: [Next.js 15+](https://nextjs.org/) (App Router)
 - **Styling**: [Tailwind CSS 4](https://tailwindcss.com/)
 - **State Management**: [Zustand](https://github.com/pmndrs/zustand)
@@ -32,6 +33,7 @@ Cloud Vault is a premium, multi-platform document management system that unifies
 - **Components**: [Base UI](https://base-ui.com/) & [Shadcn UI](https://ui.shadcn.com/)
 
 ### Backend
+
 - **Framework**: [NestJS](https://nestjs.com/)
 - **ORM**: [Prisma](https://www.prisma.io/)
 - **Database**: [PostgreSQL](https://www.postgresql.org/)
@@ -44,6 +46,7 @@ Cloud Vault is a premium, multi-platform document management system that unifies
 ## 🚀 Getting Started
 
 ### Prerequisites
+
 - Node.js (v20+)
 - PostgreSQL database
 - Google Cloud Console Project (for Drive access)
@@ -53,12 +56,14 @@ Cloud Vault is a premium, multi-platform document management system that unifies
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/mohammadali-eth/CloudVault.git
    cd cloud-vault
    ```
 
 2. **Backend Setup**
+
    ```bash
    cd backend
    npm install
@@ -79,6 +84,7 @@ Cloud Vault is a premium, multi-platform document management system that unifies
 ## ⚙️ Environment Variables
 
 ### Backend (.env)
+
 ```env
 PORT=4000
 DATABASE_URL="postgresql://user:password@localhost:5432/cloudvault"
@@ -133,4 +139,5 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 This project is [UNLICENSED](LICENSE).
 
 ---
+
 Built with ❤️ by [Mohammadali Dhanga](https://github.com/mohammadali-eth)
