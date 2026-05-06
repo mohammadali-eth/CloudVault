@@ -12,7 +12,13 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Progress } from "../../ui/progress";
-import { Upload, File, X, CheckCircle2, Loader2, Cloud, HardDrive } from "lucide-react";
+import { Upload, File, X, CheckCircle2, Loader2,  Cloud,
+  HardDrive,
+  Pencil,
+  Check as CheckIcon,
+  X as XIcon,
+  Send,
+} from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -122,12 +128,15 @@ export function FileUpload({
           <div className="space-y-2">
             <label className="text-xs font-medium text-muted-foreground">Select Platform</label>
             <Tabs value={provider} onValueChange={setProvider} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 h-10">
+              <TabsList className="grid w-full grid-cols-3 h-10">
                 <TabsTrigger value="google-drive" className="gap-2">
-                  <HardDrive className="w-4 h-4" /> Google Drive
+                  <HardDrive className="w-4 h-4" /> Drive
                 </TabsTrigger>
                 <TabsTrigger value="cloudinary" className="gap-2">
-                  <Cloud className="w-4 h-4" /> Cloudinary
+                  <Cloud className="w-4 h-4" /> Cloud
+                </TabsTrigger>
+                <TabsTrigger value="telegram" className="gap-2">
+                  <Send className="w-4 h-4" /> Telegram
                 </TabsTrigger>
               </TabsList>
             </Tabs>

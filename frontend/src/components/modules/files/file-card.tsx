@@ -12,6 +12,7 @@ import {
   Pencil,
   Check as CheckIcon,
   X as XIcon,
+  Send,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -164,11 +165,17 @@ export function FileCard({
             <div className="flex items-center gap-1.5 py-0.5">
               {file.provider === "cloudinary" ? (
                 <Cloud className="w-3.5 h-3.5 text-blue-400" />
+              ) : file.provider === "telegram" ? (
+                <Send className="w-3.5 h-3.5 text-sky-400" />
               ) : (
                 <HardDrive className="w-3.5 h-3.5 text-green-400" />
               )}
               <span className="font-medium">
-                {file.provider === "cloudinary" ? "Cloudinary" : "Google Drive"}
+                {file.provider === "cloudinary"
+                  ? "Cloudinary"
+                  : file.provider === "telegram"
+                    ? "Telegram"
+                    : "Google Drive"}
               </span>
             </div>
             <p className="truncate opacity-70">

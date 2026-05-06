@@ -4,6 +4,7 @@ export declare class FilesService {
     private prisma;
     private configService;
     private drive;
+    private bot;
     constructor(prisma: PrismaService, configService: ConfigService);
     private ensureFoldersExist;
     uploadFiles(userId: string, files: Express.Multer.File[], path?: string, relativePaths?: string[], provider?: string): Promise<{
@@ -12,8 +13,8 @@ export declare class FilesService {
         name: string;
         id: string;
         createdAt: Date;
-        size: number;
         type: string;
+        size: number;
         isFolder: boolean;
         provider: string;
         providerFileId: string | null;
@@ -25,8 +26,8 @@ export declare class FilesService {
         name: string;
         id: string;
         createdAt: Date;
-        size: number;
         type: string;
+        size: number;
         isFolder: boolean;
         provider: string;
         providerFileId: string | null;
@@ -38,8 +39,8 @@ export declare class FilesService {
         name: string;
         id: string;
         createdAt: Date;
-        size: number;
         type: string;
+        size: number;
         isFolder: boolean;
         provider: string;
         providerFileId: string | null;
@@ -51,8 +52,8 @@ export declare class FilesService {
         name: string;
         id: string;
         createdAt: Date;
-        size: number;
         type: string;
+        size: number;
         isFolder: boolean;
         provider: string;
         providerFileId: string | null;
@@ -64,8 +65,8 @@ export declare class FilesService {
         name: string;
         id: string;
         createdAt: Date;
-        size: number;
         type: string;
+        size: number;
         isFolder: boolean;
         provider: string;
         providerFileId: string | null;
@@ -77,8 +78,8 @@ export declare class FilesService {
         name: string;
         id: string;
         createdAt: Date;
-        size: number;
         type: string;
+        size: number;
         isFolder: boolean;
         provider: string;
         providerFileId: string | null;

@@ -8,10 +8,12 @@ import { google, drive_v3 } from 'googleapis';
 import { ConfigService } from '@nestjs/config';
 import { Readable } from 'stream';
 import { v2 as cloudinary } from 'cloudinary';
+import { Telegraf } from 'telegraf';
 
 @Injectable()
 export class FilesService {
   private drive: drive_v3.Drive;
+  private bot: Telegraf;
 
   constructor(
     private prisma: PrismaService,
@@ -57,6 +59,12 @@ export class FilesService {
       api_key: this.configService.get<string>('CLOUDINARY_API_KEY'),
       api_secret: this.configService.get<string>('CLOUDINARY_API_SECRET'),
     });
+
+    // Initialize Telegram Bot
+    const botToken = this.configService.get<string>('TELEGRAM_BOT_TOKEN');
+    if (botToken) {
+      this.bot = new Telegraf(botToken);
+    }
   }
 
   private async ensureFoldersExist(
@@ -144,6 +152,19 @@ export class FilesService {
           })) as any;
           fileUrl = uploadResult.secure_url;
           providerFileId = uploadResult.public_id;
+        } else if (provider === 'telegram') {
+          if (!this.bot) throw new Error('Telegram Bot not configured');
+          const chatId = this.configService.get<string>('TELEGRAM_CHAT_ID');
+          if (!chatId) throw new Error('TELEGRAM_CHAT_ID not set');
+
+          const message = await this.bot.telegram.sendDocument(chatId, {
+            source: file.buffer,
+            filename: file.originalname,
+          }) as any;
+
+          const telegramFileId = message.document?.file_id || message.video?.file_id || message.audio?.file_id;
+          fileUrl = `https://t.me/c/${chatId.replace('-100', '')}/${message.message_id}`;
+          providerFileId = `${chatId}:${message.message_id}:${telegramFileId}`;
         } else {
           // Default to Google Drive
           if (!this.drive) {
@@ -214,6 +235,9 @@ export class FilesService {
     try {
       if (file.provider === 'cloudinary' && file.providerFileId) {
         await cloudinary.uploader.destroy(file.providerFileId);
+      } else if (file.provider === 'telegram' && file.providerFileId) {
+        const [chatId, messageId] = file.providerFileId.split(':');
+        await this.bot.telegram.deleteMessage(chatId, parseInt(messageId));
       } else if (file.provider === 'google-drive' || !file.provider) {
         if (file.providerFileId) {
           await this.drive.files.delete({
@@ -331,6 +355,14 @@ export class FilesService {
       } else if (file.provider === 'cloudinary') {
         const response = await fetch(file.url);
         if (!response.ok) throw new Error('Failed to download from Cloudinary');
+        buffer = Buffer.from(await response.arrayBuffer());
+      } else if (file.provider === 'telegram' && file.providerFileId) {
+        const [,, telegramFileId] = file.providerFileId.split(':');
+        if (!telegramFileId) throw new Error('Telegram file_id not found in record');
+        
+        const fileLink = await this.bot.telegram.getFileLink(telegramFileId);
+        const response = await fetch(fileLink.href);
+        if (!response.ok) throw new Error('Failed to download from Telegram');
         buffer = Buffer.from(await response.arrayBuffer());
       } else {
         throw new Error('Unsupported source provider for migration');
