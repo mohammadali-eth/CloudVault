@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Upload, File, Loader2, Cloud, HardDrive } from "lucide-react";
+import { Upload, File, Loader2, Cloud, HardDrive, Send } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -105,7 +105,7 @@ export function FileReplace({
           </DialogTitle>
           <DialogDescription>
             {isMigrateMode
-              ? `Move this ${file.isFolder ? "folder" : "file"} from ${file.provider === "cloudinary" ? "Cloudinary" : "Google Drive"} to ${provider === "cloudinary" ? "Cloudinary" : "Google Drive"}.`
+              ? `Move this ${file.isFolder ? "folder" : "file"} from ${file.provider === "telegram" ? "Telegram" : file.provider === "cloudinary" ? "Cloudinary" : "Google Drive"} to ${provider === "telegram" ? "Telegram" : provider === "cloudinary" ? "Cloudinary" : "Google Drive"}.`
               : "Choose a new platform or keep the current one, and select the new file."}
           </DialogDescription>
         </DialogHeader>
@@ -120,12 +120,15 @@ export function FileReplace({
               onValueChange={setProvider}
               className="w-full"
             >
-              <TabsList className="grid w-full grid-cols-2 h-10">
+              <TabsList className="grid w-full grid-cols-3 h-10">
                 <TabsTrigger value="google-drive" className="gap-2">
                   <HardDrive className="w-4 h-4" /> Google Drive
                 </TabsTrigger>
                 <TabsTrigger value="cloudinary" className="gap-2">
                   <Cloud className="w-4 h-4" /> Cloudinary
+                </TabsTrigger>
+                <TabsTrigger value="telegram" className="gap-2">
+                  <Send className="w-4 h-4" /> Telegram
                 </TabsTrigger>
               </TabsList>
             </Tabs>

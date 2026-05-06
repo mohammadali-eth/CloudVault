@@ -2,7 +2,7 @@
 
 Cloud Vault is a premium, multi-platform document management system that unifies storage from Google Drive, Cloudinary, and Telegram into a single, sleek dashboard. It allows users to upload, manage, and migrate files across different cloud providers seamlessly.
 
-![Dashboard Preview](https://drive.google.com/file/d/18eEegO5ci3pIPjekwTfHf3cBobNNP-qj/view?usp=drivesdk)
+![Dashboard Preview](https://drive.google.com/drive/folders/1NL5ui6YXq6JYAG8iUoePMyX4qJuN4Y0G)
 
 ## ✨ Features
 
