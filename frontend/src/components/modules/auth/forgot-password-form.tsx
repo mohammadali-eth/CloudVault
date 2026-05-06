@@ -36,7 +36,7 @@ export function ForgotPasswordForm() {
     setIsLoading(true);
 
     try {
-      await api.post("/auth/forgot-password", { email });
+      await api.post("/api/auth/forgot-password", { email });
       setIsSent(true);
       toast.success("Check your email for reset instructions");
     } catch (error: any) {

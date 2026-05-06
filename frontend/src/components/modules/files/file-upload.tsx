@@ -86,7 +86,7 @@ export function FileUpload({
         });
       }, 200);
 
-      await api.post(`/files/upload?path=${encodeURIComponent(currentPath || '/')}`, formData, {
+      await api.post(`/api/files/upload?path=${encodeURIComponent(currentPath || '/')}`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },

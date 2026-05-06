@@ -44,7 +44,7 @@ export default function DashboardPage() {
 
   const fetchStats = useCallback(async () => {
     try {
-      const response = await api.get("/files/stats");
+      const response = await api.get("/api/files/stats");
       setStats(response.data);
     } catch (error) {
       console.error("Failed to load stats", error);
@@ -54,7 +54,7 @@ export default function DashboardPage() {
   const fetchFiles = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await api.get(`/files?path=${currentPath}`);
+      const response = await api.get(`/api/files?path=${currentPath}`);
       setFiles(response.data);
       fetchStats();
     } catch (error) {
@@ -84,7 +84,7 @@ export default function DashboardPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this file?")) return;
     try {
-      await api.delete(`/files/${id}`);
+      await api.delete(`/api/files/${id}`);
       toast.success("File deleted");
       fetchFiles();
     } catch (error) {
@@ -112,7 +112,7 @@ export default function DashboardPage() {
 
   const handleRename = async (fileId: string, newName: string) => {
     try {
-      await api.patch(`/files/${fileId}/rename`, { name: newName });
+      await api.patch(`/api/files/${fileId}/rename`, { name: newName });
       toast.success("File renamed");
       fetchFiles();
     } catch (error) {

@@ -37,7 +37,7 @@ export function SignupForm() {
     setIsLoading(true);
 
     try {
-      const response = await api.post("/auth/signup", { name, email, password });
+      const response = await api.post("/api/auth/signup", { name, email, password });
       setAuth(response.data.user, response.data.access_token);
       toast.success("Account created successfully!");
       router.push("/dashboard");

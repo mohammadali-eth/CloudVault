@@ -54,7 +54,7 @@ export function FileReplace({
 
     try {
       toast.loading("Replacing file...", { id: "replace" });
-      await api.put(`/files/${file.id}`, formData, {
+      await api.put(`/api/files/${file.id}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       toast.success("File replaced successfully!", { id: "replace" });
@@ -77,7 +77,7 @@ export function FileReplace({
     setIsUploading(true);
     try {
       toast.loading("Migrating platform...", { id: "migrate" });
-      await api.patch(`/files/${file.id}/migrate`, { provider });
+      await api.patch(`/api/files/${file.id}/migrate`, { provider });
       toast.success("Platform migrated successfully!", { id: "migrate" });
       onOpenChange(false);
       onSuccess();

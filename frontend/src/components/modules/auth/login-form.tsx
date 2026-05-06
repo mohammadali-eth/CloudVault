@@ -43,7 +43,7 @@ export function LoginForm() {
     setIsLoading(true);
 
     try {
-      const response = await api.post("/auth/login", { email, password });
+      const response = await api.post("/api/auth/login", { email, password });
       setAuth(response.data.user, response.data.access_token);
       toast.success("Welcome back!");
       router.push("/dashboard");
