@@ -50,6 +50,11 @@ export class FilesController {
     return this.filesService.findAll(req.user.id, path || '/');
   }
 
+  @Get('stats')
+  async getStats(@Request() req: any) {
+    return this.filesService.getStats(req.user.id);
+  }
+
   @Delete(':id')
   async deleteFile(@Param('id') id: string, @Request() req: any) {
     return this.filesService.deleteFile(req.user.id, id);

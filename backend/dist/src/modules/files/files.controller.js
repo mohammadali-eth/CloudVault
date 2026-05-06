@@ -32,6 +32,9 @@ let FilesController = class FilesController {
     async getFiles(req, path) {
         return this.filesService.findAll(req.user.id, path || '/');
     }
+    async getStats(req) {
+        return this.filesService.getStats(req.user.id);
+    }
     async deleteFile(id, req) {
         return this.filesService.deleteFile(req.user.id, id);
     }
@@ -67,6 +70,13 @@ __decorate([
     __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", Promise)
 ], FilesController.prototype, "getFiles", null);
+__decorate([
+    (0, common_1.Get)('stats'),
+    __param(0, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], FilesController.prototype, "getStats", null);
 __decorate([
     (0, common_1.Delete)(':id'),
     __param(0, (0, common_1.Param)('id')),

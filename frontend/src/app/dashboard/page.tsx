@@ -25,6 +25,7 @@ import {
   Folder,
   ArrowLeft,
   Cloud,
+  Send,
 } from "lucide-react";
 import { FileUpload } from "@/components/modules/files/file-upload";
 import { FileCard } from "@/components/modules/files/file-card";
@@ -36,21 +37,32 @@ export default function DashboardPage() {
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuthStore();
   const [files, setFiles] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>(null);
   const [currentPath, setCurrentPath] = useState("/");
   const [isLoading, setIsLoading] = useState(true);
   const [replacingFile, setReplacingFile] = useState<any | null>(null);
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const response = await api.get("/files/stats");
+      setStats(response.data);
+    } catch (error) {
+      console.error("Failed to load stats", error);
+    }
+  }, []);
 
   const fetchFiles = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await api.get(`/files?path=${currentPath}`);
       setFiles(response.data);
+      fetchStats();
     } catch (error) {
       toast.error("Failed to load files");
     } finally {
       setIsLoading(false);
     }
-  }, [currentPath]);
+  }, [currentPath, fetchStats]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -98,8 +110,6 @@ export default function DashboardPage() {
     setCurrentPath(newPath);
   };
 
-
-
   const handleRename = async (fileId: string, newName: string) => {
     try {
       await api.patch(`/files/${fileId}/rename`, { name: newName });
@@ -122,7 +132,7 @@ export default function DashboardPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
-      <FileReplace 
+      <FileReplace
         isOpen={!!replacingFile}
         onOpenChange={(open) => !open && setReplacingFile(null)}
         file={replacingFile}
@@ -168,23 +178,104 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <StatCard
           icon={<HardDrive className="w-5 h-5 text-blue-500" />}
-          title="Folder Usage"
-          value={formatSize(totalSize)}
-          description="Total size in this path"
+          title="Global Storage"
+          value={formatSize(stats?.totalSize || 0)}
+          description={`${stats?.totalFiles || 0} Files across all platforms`}
         />
         <StatCard
-          icon={<FileIcon className="w-5 h-5 text-green-500" />}
-          title="Total Files"
-          value={files.length.toString()}
-          description="Files in this folder"
+          icon={<Folder className="w-5 h-5 text-amber-500" />}
+          title="Total Folders"
+          value={stats?.totalFolders?.toString() || "0"}
+          description="Across all directories"
         />
         <StatCard
-          icon={<Clock className="w-5 h-5 text-purple-500" />}
-          title="Recent Activity"
-          value="Live"
-          description="Real-time storage status"
+          icon={<Send className="w-5 h-5 text-sky-500" />}
+          title="Platform Health"
+          value="Connected"
+          description="3 Storage Providers active"
         />
       </div>
+
+      {stats && (
+        <Card className="mb-8 overflow-hidden">
+          <CardHeader className="bg-muted/30 pb-4">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Cloud className="w-5 h-5" /> Storage Breakdown
+            </CardTitle>
+            <CardDescription>
+              Usage distribution across your cloud vault.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {["google-drive", "cloudinary", "telegram"].map((provider) => {
+                const providerStats = stats.providers.find(
+                  (p: any) => p.provider === provider,
+                ) || { size: 0, count: 0 };
+                const label =
+                  provider === "google-drive"
+                    ? "Google Drive"
+                    : provider === "cloudinary"
+                      ? "Cloudinary"
+                      : "Telegram";
+                const icon =
+                  provider === "google-drive" ? (
+                    <HardDrive className="w-4 h-4 text-green-500" />
+                  ) : provider === "cloudinary" ? (
+                    <Cloud className="w-4 h-4 text-blue-500" />
+                  ) : (
+                    <Send className="w-4 h-4 text-sky-500" />
+                  );
+
+                // Mock limits for visual representation
+                const limit =
+                  provider === "google-drive"
+                    ? 15 * 1024 * 1024 * 1024
+                    : provider === "cloudinary"
+                      ? 25 * 1024 * 1024
+                      : 0; // 15GB, 25MB, 0 for unlimited
+                const percentage =
+                  limit > 0
+                    ? Math.min((providerStats.size / limit) * 100, 100)
+                    : 0;
+
+                return (
+                  <div key={provider} className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 font-medium">
+                        {icon}
+                        <span>{label}</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {providerStats.count} files
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-500 ${provider === "telegram" ? "bg-sky-500" : "bg-primary"}`}
+                          style={{
+                            width:
+                              provider === "telegram"
+                                ? "100%"
+                                : `${percentage}%`,
+                          }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
+                        <span>{formatSize(providerStats.size)} used</span>
+                        <span>
+                          {limit > 0 ? formatSize(limit) : "Unlimited"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">

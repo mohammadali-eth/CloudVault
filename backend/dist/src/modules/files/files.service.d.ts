@@ -33,6 +33,16 @@ export declare class FilesService {
         providerFileId: string | null;
         ownerId: string;
     }[]>;
+    getStats(userId: string): Promise<{
+        providers: {
+            provider: string;
+            size: number;
+            count: number;
+        }[];
+        totalFiles: number;
+        totalFolders: number;
+        totalSize: number;
+    }>;
     deleteFile(userId: string, fileId: string): Promise<{
         path: string;
         url: string;

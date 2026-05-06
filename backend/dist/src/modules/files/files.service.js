@@ -184,8 +184,36 @@ let FilesService = class FilesService {
                 ownerId: userId,
                 path: path,
             },
-            orderBy: { createdAt: 'desc' },
+            orderBy: [{ isFolder: 'desc' }, { createdAt: 'desc' }],
         });
+    }
+    async getStats(userId) {
+        const stats = await this.prisma.file.groupBy({
+            by: ['provider'],
+            where: { ownerId: userId, isFolder: false },
+            _sum: { size: true },
+            _count: { id: true },
+        });
+        const totalFiles = await this.prisma.file.count({
+            where: { ownerId: userId, isFolder: false },
+        });
+        const totalFolders = await this.prisma.file.count({
+            where: { ownerId: userId, isFolder: true },
+        });
+        const totalSize = await this.prisma.file.aggregate({
+            where: { ownerId: userId, isFolder: false },
+            _sum: { size: true },
+        });
+        return {
+            providers: stats.map((s) => ({
+                provider: s.provider,
+                size: s._sum.size || 0,
+                count: s._count.id,
+            })),
+            totalFiles,
+            totalFolders,
+            totalSize: totalSize._sum.size || 0,
+        };
     }
     async deleteFile(userId, fileId) {
         const file = await this.prisma.file.findFirst({

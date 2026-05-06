@@ -28,6 +28,16 @@ export declare class FilesController {
         providerFileId: string | null;
         ownerId: string;
     }[]>;
+    getStats(req: any): Promise<{
+        providers: {
+            provider: string;
+            size: number;
+            count: number;
+        }[];
+        totalFiles: number;
+        totalFolders: number;
+        totalSize: number;
+    }>;
     deleteFile(id: string, req: any): Promise<{
         path: string;
         url: string;
