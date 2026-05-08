@@ -8,28 +8,51 @@ datasource db {
 }
 
 model User {
-  id               String    @id @default(uuid())
-  email            String    @unique
+  id               String         @id @default(uuid())
+  email            String         @unique
   password         String
   name             String?
   resetToken       String?
   resetTokenExpiry DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
   files            File[]
+  storageConfig    StorageConfig?
+}
+
+model StorageConfig {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  // Google Drive
+  googleEmail    String?
+  googleKey      String?
+  googleFolderId String?
+
+  // Cloudinary
+  cloudinaryName   String?
+  cloudinaryKey    String?
+  cloudinarySecret String?
+
+  // Telegram
+  telegramToken  String?
+  telegramChatId String?
+
+  updatedAt DateTime @updatedAt
 }
 
 model File {
-  id        String   @id @default(uuid())
-  name      String
-  url       String
-  size      Int
-  type      String
-  path      String   @default("/")
-  isFolder  Boolean  @default(false)
-  provider  String   @default("google-drive")
+  id             String   @id @default(uuid())
+  name           String
+  url            String
+  size           Int
+  type           String
+  path           String   @default("/")
+  isFolder       Boolean  @default(false)
+  provider       String   @default("google-drive")
   providerFileId String?
-  ownerId   String
-  owner     User     @relation(fields: [ownerId], references: [id])
-  createdAt DateTime @default(now())
+  ownerId        String
+  owner          User     @relation(fields: [ownerId], references: [id])
+  createdAt      DateTime @default(now())
 }

@@ -13,6 +13,7 @@ const serve_static_1 = require("@nestjs/serve-static");
 const path_1 = require("path");
 const auth_module_1 = require("./modules/auth/auth.module");
 const files_module_1 = require("./modules/files/files.module");
+const storage_config_module_1 = require("./modules/config/storage-config.module");
 const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
 let AppModule = class AppModule {
@@ -30,6 +31,7 @@ exports.AppModule = AppModule = __decorate([
             }),
             auth_module_1.AuthModule,
             files_module_1.FilesModule,
+            storage_config_module_1.StorageConfigModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

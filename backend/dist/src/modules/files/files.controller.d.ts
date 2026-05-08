@@ -8,8 +8,8 @@ export declare class FilesController {
         name: string;
         id: string;
         createdAt: Date;
-        type: string;
         size: number;
+        type: string;
         isFolder: boolean;
         provider: string;
         providerFileId: string | null;
@@ -21,8 +21,8 @@ export declare class FilesController {
         name: string;
         id: string;
         createdAt: Date;
-        type: string;
         size: number;
+        type: string;
         isFolder: boolean;
         provider: string;
         providerFileId: string | null;
@@ -44,8 +44,8 @@ export declare class FilesController {
         name: string;
         id: string;
         createdAt: Date;
-        type: string;
         size: number;
+        type: string;
         isFolder: boolean;
         provider: string;
         providerFileId: string | null;
@@ -57,8 +57,8 @@ export declare class FilesController {
         name: string;
         id: string;
         createdAt: Date;
-        type: string;
         size: number;
+        type: string;
         isFolder: boolean;
         provider: string;
         providerFileId: string | null;
@@ -70,8 +70,8 @@ export declare class FilesController {
         name: string;
         id: string;
         createdAt: Date;
-        type: string;
         size: number;
+        type: string;
         isFolder: boolean;
         provider: string;
         providerFileId: string | null;
@@ -83,8 +83,8 @@ export declare class FilesController {
         name: string;
         id: string;
         createdAt: Date;
-        type: string;
         size: number;
+        type: string;
         isFolder: boolean;
         provider: string;
         providerFileId: string | null;

@@ -65,11 +65,31 @@ export default function DashboardPage() {
   }, [currentPath, fetchStats]);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push("/login");
-    } else {
-      fetchFiles();
-    }
+    const checkConfigAndFetchFiles = async () => {
+      if (!isAuthenticated) {
+        router.push("/login");
+        return;
+      }
+
+      try {
+        const configResponse = await api.get("/api/storage-config");
+        const config = configResponse.data;
+        
+        // If no configuration at all, redirect to setup
+        if (!config || (!config.googleEmail && !config.cloudinaryName && !config.telegramToken)) {
+          toast.info("Please configure at least one storage provider to get started.");
+          router.push("/setup");
+          return;
+        }
+
+        fetchFiles();
+      } catch (error) {
+        console.error("Failed to check configuration", error);
+        fetchFiles(); // Fallback to fetching anyway
+      }
+    };
+
+    checkConfigAndFetchFiles();
   }, [isAuthenticated, router, fetchFiles]);
 
   if (!isAuthenticated || !user) {

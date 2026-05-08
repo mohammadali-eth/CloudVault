@@ -17,46 +17,77 @@ const config_1 = require("@nestjs/config");
 const stream_1 = require("stream");
 const cloudinary_1 = require("cloudinary");
 const telegraf_1 = require("telegraf");
+const storage_config_service_1 = require("../config/storage-config.service");
 let FilesService = class FilesService {
     prisma;
     configService;
-    drive;
-    bot;
-    constructor(prisma, configService) {
+    storageConfigService;
+    constructor(prisma, configService, storageConfigService) {
         this.prisma = prisma;
         this.configService = configService;
+        this.storageConfigService = storageConfigService;
+    }
+    async getGoogleDrive(userId) {
+        const userConfig = await this.storageConfigService.getByUserId(userId);
+        if (userConfig?.googleEmail && userConfig?.googleKey) {
+            const auth = new googleapis_1.google.auth.JWT({
+                email: userConfig.googleEmail,
+                key: userConfig.googleKey.replace(/\\n/g, '\n'),
+                scopes: ['https://www.googleapis.com/auth/drive'],
+            });
+            return googleapis_1.google.drive({ version: 'v3', auth });
+        }
         const clientId = this.configService.get('GOOGLE_CLIENT_ID');
         const clientSecret = this.configService.get('GOOGLE_CLIENT_SECRET');
-        const redirectUri = this.configService.get('GOOGLE_REDIRECT_URI');
         const refreshToken = this.configService.get('GOOGLE_DRIVE_REFRESH_TOKEN');
         if (clientId && clientSecret && refreshToken) {
-            const oauth2Client = new googleapis_1.google.auth.OAuth2(clientId, clientSecret, redirectUri);
+            const oauth2Client = new googleapis_1.google.auth.OAuth2(clientId, clientSecret);
             oauth2Client.setCredentials({ refresh_token: refreshToken });
-            this.drive = googleapis_1.google.drive({ version: 'v3', auth: oauth2Client });
+            return googleapis_1.google.drive({ version: 'v3', auth: oauth2Client });
         }
-        else {
-            const clientEmail = this.configService.get('GOOGLE_DRIVE_CLIENT_EMAIL');
-            const privateKey = this.configService
-                .get('GOOGLE_DRIVE_PRIVATE_KEY')
-                ?.replace(/\\n/g, '\n');
-            if (clientEmail && privateKey) {
-                const auth = new googleapis_1.google.auth.JWT({
-                    email: clientEmail,
-                    key: privateKey,
-                    scopes: ['https://www.googleapis.com/auth/drive'],
-                });
-                this.drive = googleapis_1.google.drive({ version: 'v3', auth });
-            }
+        const clientEmail = this.configService.get('GOOGLE_DRIVE_CLIENT_EMAIL');
+        const privateKey = this.configService.get('GOOGLE_DRIVE_PRIVATE_KEY')?.replace(/\\n/g, '\n');
+        if (clientEmail && privateKey) {
+            const auth = new googleapis_1.google.auth.JWT({
+                email: clientEmail,
+                key: privateKey,
+                scopes: ['https://www.googleapis.com/auth/drive'],
+            });
+            return googleapis_1.google.drive({ version: 'v3', auth });
         }
-        cloudinary_1.v2.config({
+        return null;
+    }
+    async getCloudinary(userId) {
+        const userConfig = await this.storageConfigService.getByUserId(userId);
+        if (userConfig?.cloudinaryName && userConfig?.cloudinaryKey && userConfig?.cloudinarySecret) {
+            return {
+                cloud_name: userConfig.cloudinaryName,
+                api_key: userConfig.cloudinaryKey,
+                api_secret: userConfig.cloudinarySecret,
+            };
+        }
+        return {
             cloud_name: this.configService.get('CLOUDINARY_CLOUD_NAME'),
             api_key: this.configService.get('CLOUDINARY_API_KEY'),
             api_secret: this.configService.get('CLOUDINARY_API_SECRET'),
-        });
+        };
+    }
+    async getTelegramBot(userId) {
+        const userConfig = await this.storageConfigService.getByUserId(userId);
+        if (userConfig?.telegramToken) {
+            return {
+                bot: new telegraf_1.Telegraf(userConfig.telegramToken),
+                chatId: userConfig.telegramChatId || this.configService.get('TELEGRAM_CHAT_ID'),
+            };
+        }
         const botToken = this.configService.get('TELEGRAM_BOT_TOKEN');
         if (botToken) {
-            this.bot = new telegraf_1.Telegraf(botToken);
+            return {
+                bot: new telegraf_1.Telegraf(botToken),
+                chatId: this.configService.get('TELEGRAM_CHAT_ID'),
+            };
         }
+        return null;
     }
     async ensureFoldersExist(userId, basePath, relativePath, provider = 'google-drive') {
         if (!relativePath || !relativePath.includes('/'))
@@ -108,8 +139,10 @@ let FilesService = class FilesService {
                 let fileUrl = '';
                 let providerFileId = '';
                 if (provider === 'cloudinary') {
+                    const cloudConfig = await this.getCloudinary(userId);
                     uploadResult = (await new Promise((resolve, reject) => {
                         const uploadStream = cloudinary_1.v2.uploader.upload_stream({
+                            ...cloudConfig,
                             folder: 'cloud-vault',
                             resource_type: 'auto',
                         }, (error, result) => {
@@ -124,27 +157,30 @@ let FilesService = class FilesService {
                     providerFileId = uploadResult.public_id;
                 }
                 else if (provider === 'telegram') {
-                    if (!this.bot)
+                    const tg = await this.getTelegramBot(userId);
+                    if (!tg || !tg.bot)
                         throw new Error('Telegram Bot not configured');
-                    const chatId = this.configService.get('TELEGRAM_CHAT_ID');
-                    if (!chatId)
-                        throw new Error('TELEGRAM_CHAT_ID not set');
-                    const message = await this.bot.telegram.sendDocument(chatId, {
+                    if (!tg.chatId)
+                        throw new Error('Telegram Chat ID not configured');
+                    const message = await tg.bot.telegram.sendDocument(tg.chatId, {
                         source: file.buffer,
                         filename: file.originalname,
                     });
                     const telegramFileId = message.document?.file_id || message.video?.file_id || message.audio?.file_id;
-                    fileUrl = `https://t.me/c/${chatId.replace('-100', '')}/${message.message_id}`;
-                    providerFileId = `${chatId}:${message.message_id}:${telegramFileId}`;
+                    fileUrl = `https://t.me/c/${tg.chatId.replace('-100', '')}/${message.message_id}`;
+                    providerFileId = `${tg.chatId}:${message.message_id}:${telegramFileId}`;
                 }
                 else {
-                    if (!this.drive) {
+                    const drive = await this.getGoogleDrive(userId);
+                    if (!drive) {
                         throw new Error('Google Drive not configured');
                     }
-                    const driveResponse = await this.drive.files.create({
+                    const userConfig = await this.storageConfigService.getByUserId(userId);
+                    const activeFolderId = userConfig?.googleFolderId || this.configService.get('GOOGLE_DRIVE_FOLDER_ID');
+                    const driveResponse = await drive.files.create({
                         requestBody: {
                             name: file.originalname,
-                            parents: folderId ? [folderId] : [],
+                            parents: activeFolderId ? [activeFolderId] : [],
                         },
                         media: {
                             mimeType: file.mimetype,
@@ -224,26 +260,33 @@ let FilesService = class FilesService {
         }
         try {
             if (file.provider === 'cloudinary' && file.providerFileId) {
-                await cloudinary_1.v2.uploader.destroy(file.providerFileId);
+                const cloudConfig = await this.getCloudinary(userId);
+                await cloudinary_1.v2.uploader.destroy(file.providerFileId, cloudConfig);
             }
             else if (file.provider === 'telegram' && file.providerFileId) {
-                const [chatId, messageId] = file.providerFileId.split(':');
-                await this.bot.telegram.deleteMessage(chatId, parseInt(messageId));
+                const tg = await this.getTelegramBot(userId);
+                if (tg && tg.bot) {
+                    const [chatId, messageId] = file.providerFileId.split(':');
+                    await tg.bot.telegram.deleteMessage(chatId, parseInt(messageId));
+                }
             }
             else if (file.provider === 'google-drive' || !file.provider) {
-                if (file.providerFileId) {
-                    await this.drive.files.delete({
-                        fileId: file.providerFileId,
-                        supportsAllDrives: true,
-                    });
-                }
-                else if (file.url) {
-                    const match = file.url.match(/d\/([a-zA-Z0-9_-]+)/);
-                    if (match && match[1]) {
-                        await this.drive.files.delete({
-                            fileId: match[1],
+                const drive = await this.getGoogleDrive(userId);
+                if (drive) {
+                    if (file.providerFileId) {
+                        await drive.files.delete({
+                            fileId: file.providerFileId,
                             supportsAllDrives: true,
                         });
+                    }
+                    else if (file.url) {
+                        const match = file.url.match(/d\/([a-zA-Z0-9_-]+)/);
+                        if (match && match[1]) {
+                            await drive.files.delete({
+                                fileId: match[1],
+                                supportsAllDrives: true,
+                            });
+                        }
                     }
                 }
             }
@@ -274,10 +317,13 @@ let FilesService = class FilesService {
             throw new common_1.NotFoundException('File not found');
         if (file.provider === 'google-drive' && file.providerFileId) {
             try {
-                await this.drive.files.update({
-                    fileId: file.providerFileId,
-                    requestBody: { name: newName },
-                });
+                const drive = await this.getGoogleDrive(userId);
+                if (drive) {
+                    await drive.files.update({
+                        fileId: file.providerFileId,
+                        requestBody: { name: newName },
+                    });
+                }
             }
             catch (error) {
                 console.error('Google Drive rename error:', error);
@@ -314,7 +360,10 @@ let FilesService = class FilesService {
         try {
             let buffer;
             if (file.provider === 'google-drive' && file.providerFileId) {
-                const response = await this.drive.files.get({
+                const drive = await this.getGoogleDrive(userId);
+                if (!drive)
+                    throw new Error('Google Drive source not configured');
+                const response = await drive.files.get({
                     fileId: file.providerFileId,
                     alt: 'media',
                 }, { responseType: 'arraybuffer' });
@@ -327,10 +376,13 @@ let FilesService = class FilesService {
                 buffer = Buffer.from(await response.arrayBuffer());
             }
             else if (file.provider === 'telegram' && file.providerFileId) {
+                const tg = await this.getTelegramBot(userId);
+                if (!tg || !tg.bot)
+                    throw new Error('Telegram source not configured');
                 const [, , telegramFileId] = file.providerFileId.split(':');
                 if (!telegramFileId)
                     throw new Error('Telegram file_id not found in record');
-                const fileLink = await this.bot.telegram.getFileLink(telegramFileId);
+                const fileLink = await tg.bot.telegram.getFileLink(telegramFileId);
                 const response = await fetch(fileLink.href);
                 if (!response.ok)
                     throw new Error('Failed to download from Telegram');
@@ -360,6 +412,7 @@ exports.FilesService = FilesService;
 exports.FilesService = FilesService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        config_1.ConfigService])
+        config_1.ConfigService,
+        storage_config_service_1.StorageConfigService])
 ], FilesService);
 //# sourceMappingURL=files.service.js.map

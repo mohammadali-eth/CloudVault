@@ -131,6 +131,20 @@ exports.Prisma.UserScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.StorageConfigScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  googleEmail: 'googleEmail',
+  googleKey: 'googleKey',
+  googleFolderId: 'googleFolderId',
+  cloudinaryName: 'cloudinaryName',
+  cloudinaryKey: 'cloudinaryKey',
+  cloudinarySecret: 'cloudinarySecret',
+  telegramToken: 'telegramToken',
+  telegramChatId: 'telegramChatId',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.FileScalarFieldEnum = {
   id: 'id',
   name: 'name',
@@ -163,6 +177,7 @@ exports.Prisma.NullsOrder = {
 
 exports.Prisma.ModelName = {
   User: 'User',
+  StorageConfig: 'StorageConfig',
   File: 'File'
 };
 

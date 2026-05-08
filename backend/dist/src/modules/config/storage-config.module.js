@@ -6,22 +6,20 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.FilesModule = void 0;
+exports.StorageConfigModule = void 0;
 const common_1 = require("@nestjs/common");
-const files_controller_1 = require("./files.controller");
-const files_service_1 = require("./files.service");
+const storage_config_service_1 = require("./storage-config.service");
+const storage_config_controller_1 = require("./storage-config.controller");
 const database_module_1 = require("../../database/database.module");
-const auth_module_1 = require("../auth/auth.module");
-const storage_config_module_1 = require("../config/storage-config.module");
-let FilesModule = class FilesModule {
+let StorageConfigModule = class StorageConfigModule {
 };
-exports.FilesModule = FilesModule;
-exports.FilesModule = FilesModule = __decorate([
+exports.StorageConfigModule = StorageConfigModule;
+exports.StorageConfigModule = StorageConfigModule = __decorate([
     (0, common_1.Module)({
-        imports: [database_module_1.DatabaseModule, auth_module_1.AuthModule, storage_config_module_1.StorageConfigModule],
-        controllers: [files_controller_1.FilesController],
-        providers: [files_service_1.FilesService],
-        exports: [files_service_1.FilesService],
+        imports: [database_module_1.DatabaseModule],
+        providers: [storage_config_service_1.StorageConfigService],
+        controllers: [storage_config_controller_1.StorageConfigController],
+        exports: [storage_config_service_1.StorageConfigService],
     })
-], FilesModule);
-//# sourceMappingURL=files.module.js.map
+], StorageConfigModule);
+//# sourceMappingURL=storage-config.module.js.map

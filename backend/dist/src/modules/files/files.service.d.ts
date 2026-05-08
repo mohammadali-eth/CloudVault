@@ -1,11 +1,14 @@
 import { PrismaService } from '../../database/prisma.service';
 import { ConfigService } from '@nestjs/config';
+import { StorageConfigService } from '../config/storage-config.service';
 export declare class FilesService {
     private prisma;
     private configService;
-    private drive;
-    private bot;
-    constructor(prisma: PrismaService, configService: ConfigService);
+    private storageConfigService;
+    constructor(prisma: PrismaService, configService: ConfigService, storageConfigService: StorageConfigService);
+    private getGoogleDrive;
+    private getCloudinary;
+    private getTelegramBot;
     private ensureFoldersExist;
     uploadFiles(userId: string, files: Express.Multer.File[], path?: string, relativePaths?: string[], provider?: string): Promise<{
         path: string;
@@ -13,8 +16,8 @@ export declare class FilesService {
         name: string;
         id: string;
         createdAt: Date;
-        type: string;
         size: number;
+        type: string;
         isFolder: boolean;
         provider: string;
         providerFileId: string | null;
@@ -26,8 +29,8 @@ export declare class FilesService {
         name: string;
         id: string;
         createdAt: Date;
-        type: string;
         size: number;
+        type: string;
         isFolder: boolean;
         provider: string;
         providerFileId: string | null;
@@ -49,8 +52,8 @@ export declare class FilesService {
         name: string;
         id: string;
         createdAt: Date;
-        type: string;
         size: number;
+        type: string;
         isFolder: boolean;
         provider: string;
         providerFileId: string | null;
@@ -62,8 +65,8 @@ export declare class FilesService {
         name: string;
         id: string;
         createdAt: Date;
-        type: string;
         size: number;
+        type: string;
         isFolder: boolean;
         provider: string;
         providerFileId: string | null;
@@ -75,8 +78,8 @@ export declare class FilesService {
         name: string;
         id: string;
         createdAt: Date;
-        type: string;
         size: number;
+        type: string;
         isFolder: boolean;
         provider: string;
         providerFileId: string | null;
@@ -88,8 +91,8 @@ export declare class FilesService {
         name: string;
         id: string;
         createdAt: Date;
-        type: string;
         size: number;
+        type: string;
         isFolder: boolean;
         provider: string;
         providerFileId: string | null;
